@@ -1,0 +1,4 @@
+name: counting-agents
+
+dependencies:
+    - python=3.8.5
