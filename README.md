@@ -39,9 +39,8 @@ The external representation has the same dimensions as the scene-channel and is 
 
 
 ### Actions
-
-- finger 1 (observation): moving left/right/up/down.
--  finger 2 (external repr):  moving left/right/up/down, draw/touch: whenever it touches the binary at the current position switches from 0 to 1.
+- moving left/right/up/down in scene-channel or external repr. depending in which phase of the episode we are  
+- touch/draw: binary at the current position switches from 0 to 1 when external representation is on
 - stop
 - choose 
 - answer
@@ -55,11 +54,12 @@ answer space: two units representing larger/smaller or equal/different.
 
 ### NN-Architecture
 
-
+ConvLSTM, CNN. Input, output dimensions dependent on obs-and action space. 
+Any restrictions on the output? only one action at a time (-->softmax)? Otherwise letting the output freely take values between 0 and 1 e.g. with a sigmoid activation fct.
 
 ### RL-algorithm
 
-
+Start with an rl-algorithm that is simple to implement. E.g. DQL for multi-agents?
 
 
 
@@ -75,7 +75,7 @@ Punishment for action 'choose' before 'stop'. Or having the same node for them. 
 
 
 
-**Later: enviroment can contain multiple objects ** 
+**Later: enviroment can contain multiple objects** 
 
 Final reward: when answer-action was correct.
 
