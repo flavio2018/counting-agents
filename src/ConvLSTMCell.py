@@ -3,7 +3,7 @@
 import torch
 from torch import nn
 
-def initialize_weights(self, layer):
+def initialize_weights(layer):
         """Initialize a layer's weights and biases.
 
         Args:
