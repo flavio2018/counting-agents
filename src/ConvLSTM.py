@@ -63,8 +63,6 @@ class ConvLSTMCell(nn.Module):
         self.kernel_size = 3
         self.padding = 1  # Preserve dimensions
 
-        self.H = torch.zeros(self.state_shape)
-        
         self.input_conv_params = {
             'in_channels': self.input_bands,
             'out_channels': self.kernels,
@@ -88,6 +86,7 @@ class ConvLSTMCell(nn.Module):
             self.input_dim
         )
         
+        self.H = torch.zeros(self.state_shape)
         self.C = torch.zeros(self.state_shape)
         
         self.batch_norm_layer = None
