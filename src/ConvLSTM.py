@@ -63,6 +63,8 @@ class ConvLSTMCell(nn.Module):
         self.kernel_size = 3
         self.padding = 1  # Preserve dimensions
 
+        self.H = torch.zeros(self.state_shape)
+        
         self.input_conv_params = {
             'in_channels': self.input_bands,
             'out_channels': self.kernels,
@@ -85,7 +87,9 @@ class ConvLSTMCell(nn.Module):
             self.input_dim,
             self.input_dim
         )
-
+        
+        self.C = torch.zeros(self.state_shape)
+        
         self.batch_norm_layer = None
         if self.batch_norm:
             self.batch_norm_layer = nn.BatchNorm2d(num_features=self.input_bands)
@@ -109,11 +113,29 @@ class ConvLSTMCell(nn.Module):
         self.W_ho = nn.Conv2d(**self.hidden_conv_params)
         self.W_co = HadamardProduct(self.state_shape)
 
-        # Dropouts
+        # Dropouts TODO
         self.H_drop = nn.Dropout2d(p=self.dropout)
         self.C_drop = nn.Dropout2d(p=self.dropout)
 
-        self.apply(initialize_weights) 
+        self.apply(initialize_weights)
+    
+    def forward(self, x):
+        # TODO
+        b_i = 0
+        b_f = 0
+        b_c = 0
+        b_o = 0
+        
+        i_t = nn.sigmoid(self.W_xi(x) + self.W_hi(self.H) + self.W_ci(self.C) + b_i)
+        f_t = nn.sigmoid(self.W_xf(x) + self.W_hf(self.H) + self.W_cf(self.C) + b_f)
+        C_t = f_t * self.C + i_t * nn.tanh(self.W_xc(x) + self.W_hc(self.H) + b_c)
+        o_t = nn.sigmoid(self.W_xo(x) + self.W_ho(Ht) + self.W_co(self.C) + b_o)
+        H_t = o_t * nn.tanh(C_t)
+        
+        self.C = C_t
+        self.H = H_t
+        
+        return C_t, H_t
 
 
 class ConvLSTM(nn.Module):
@@ -166,7 +188,6 @@ class ConvLSTM(nn.Module):
             )
             
         return layers
-    
         
     def forward(self, x):
         """Perform forward pass with the model.
