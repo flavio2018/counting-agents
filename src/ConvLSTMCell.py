@@ -35,7 +35,7 @@ class HadamardProduct(nn.Module):
         return x * self.weights
 
     
-class ConvLSTMCell(BaseModule):
+class ConvLSTMCell(nn.Module):
     """A convolutional LSTM cell.
 
     Implementation details follow closely the following paper:
