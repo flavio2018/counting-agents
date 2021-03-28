@@ -118,7 +118,7 @@ class ConvLSTMCell(nn.Module):
 
         self.apply(initialize_weights)
     
-    def forward(self, x):
+    def forward(self, x, C):
         # TODO
         b_i = 0
         b_f = 0
@@ -134,7 +134,7 @@ class ConvLSTMCell(nn.Module):
         self.C = C_t
         self.H = H_t
         
-        return C_t, H_t
+        return H_t, C_t
 
 
 class ConvLSTM(nn.Module):
