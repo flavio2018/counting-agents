@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 from ConvLSTMCell import ConvLSTMCell
+from utils import initialize_weights
 
 class ConvLSTMModel(nn.Module):
 

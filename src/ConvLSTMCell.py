@@ -6,23 +6,7 @@
 import torch
 from torch import nn
 from HadamardProduct import HadamardProduct
-
-def initialize_weights(layer):
-        """Initialize a layer's weights and biases.
-
-        Args:
-            layer: A PyTorch Module's layer."""
-        if isinstance(layer, (nn.BatchNorm2d, nn.BatchNorm1d)):
-            pass
-        else:
-            try:
-                nn.init.xavier_normal_(layer.weight)
-            except AttributeError:
-                pass
-            try:
-                nn.init.uniform_(layer.bias)
-            except (ValueError, AttributeError):
-                pass
+from utils import initialize_weights
     
 class ConvLSTMCell(nn.Module):
     """A convolutional LSTM cell.
@@ -39,17 +23,17 @@ class ConvLSTMCell(nn.Module):
         input_channels: The number of channels in the input data.
         input_dim: The length of of side of input data. Data is
             presumed to have identical width and heigth.
-        kernels: The number of kernels of Conv2d layers.
+        n_kernels: The number of kernels of Conv2d layers.
         dropout: The value of p parameter for dropout layers.
         batch_norm: Boolean value to indicate whether to use a batch normalization
             layer"""
 
-    def __init__(self, input_channels, input_dim,  kernels, dropout, batch_norm):
+    def __init__(self, input_channels, input_dim,  n_kernels, dropout, batch_norm):
         super().__init__()
 
         self.input_channels = input_channels
         self.input_dim = input_dim
-        self.kernels = kernels
+        self.n_kernels = n_kernels
         self.dropout = dropout
         self.batch_norm = batch_norm
 
@@ -58,15 +42,15 @@ class ConvLSTMCell(nn.Module):
 
         self.input_conv_params = {
             'in_channels': self.input_channels,
-            'out_channels': self.kernels,
+            'out_channels': self.n_kernels,
             'kernel_size': self.kernel_size,
             'padding': self.padding,
             'bias': True
         }
 
         self.hidden_conv_params = {
-            'in_channels': self.kernels,
-            'out_channels': self.kernels,
+            'in_channels': self.n_kernels,
+            'out_channels': self.n_kernels,
             'kernel_size': self.kernel_size,
             'padding': self.padding,
             'bias': True
@@ -74,7 +58,7 @@ class ConvLSTMCell(nn.Module):
 
         self.state_shape = (
             1,
-            self.kernels,
+            self.n_kernels,
             self.input_dim,
             self.input_dim
         )
