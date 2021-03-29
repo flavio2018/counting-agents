@@ -30,7 +30,7 @@ class CountingAgent(nn.Module):
         
         # Core ConvLSTM module
         self.ConvLSTMCell = ConvLSTMCell(
-            input_bands=self.input_channels, 
+            input_channels=self.input_channels, 
             input_dim=self.input_dim,
             dropout=self.dropout,
             kernels=self.n_kernels,
