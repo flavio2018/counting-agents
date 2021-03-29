@@ -125,11 +125,14 @@ class ConvLSTMCell(nn.Module):
         b_c = 0
         b_o = 0
         
-        i_t = nn.Sigmoid(self.W_xi(x) + self.W_hi(self.H) + self.W_ci(self.C) + b_i)
-        f_t = nn.Sigmoid(self.W_xf(x) + self.W_hf(self.H) + self.W_cf(self.C) + b_f)
-        C_t = f_t * self.C + i_t * nn.Tanh(self.W_xc(x) + self.W_hc(self.H) + b_c)
-        o_t = nn.Sigmoid(self.W_xo(x) + self.W_ho(Ht) + self.W_co(self.C) + b_o)
-        H_t = o_t * nn.Tanh(C_t)
+        sigmoid = nn.Sigmoid()
+        tanh = nn.Tanh()
+        
+        i_t = sigmoid(self.W_xi(x) + self.W_hi(self.H) + self.W_ci(self.C) + b_i)
+        f_t = sigmoid(self.W_xf(x) + self.W_hf(self.H) + self.W_cf(self.C) + b_f)
+        C_t = f_t * self.C + i_t * tanh(self.W_xc(x) + self.W_hc(self.H) + b_c)
+        o_t = sigmoid(self.W_xo(x) + self.W_ho(Ht) + self.W_co(self.C) + b_o)
+        H_t = o_t * tanh(C_t)
         
         self.C = C_t
         self.H = H_t
