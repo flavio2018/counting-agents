@@ -95,7 +95,7 @@ class ConvLSTMCell(nn.Module):
 
         self.apply(initialize_weights)
     
-    def forward(self, x, C):
+    def forward(self, x):
         # TODO update?
         b_i = torch.zeros(self.state_shape)
         b_f = torch.zeros(self.state_shape)
