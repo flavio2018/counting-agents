@@ -42,7 +42,7 @@ class CountingAgent(nn.Module):
         # From flattened-2D to visual representation
         # From visual representation to action space
         self.Vis2Act = nn.Sequential(
-            torch.Flatten(start_dim=0), # flattens all dimensions (assumes no batches)
+            torch.nn.Flatten(start_dim=0), # flattens all dimensions (assumes no batches)
             nn.Linear(
                 in_features=size_flattened_rep,
                 out_features=self.vis_rep_size
