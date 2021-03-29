@@ -33,7 +33,7 @@ class CountingAgent(nn.Module):
             input_channels=self.input_channels, 
             input_dim=self.input_dim,
             dropout=self.dropout,
-            kernels=self.n_kernels,
+            n_kernels=self.n_kernels,
             batch_norm=False
         )
         
