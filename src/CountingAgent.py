@@ -6,7 +6,7 @@ import numpy as np
 from ConvLSTMCell import ConvLSTMCell
 from utils import initialize_weights
 
-class CountingAgent(nn.Model):
+class CountingAgent(nn.Module):
     """
     Args:
         input_channels: The number of channels in the input data.
