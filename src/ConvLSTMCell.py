@@ -97,10 +97,10 @@ class ConvLSTMCell(nn.Module):
     
     def forward(self, x):
         # TODO update?
-        b_i = torch.zeros(self.state_shape)
-        b_f = torch.zeros(self.state_shape)
-        b_c = torch.zeros(self.state_shape)
-        b_o = torch.zeros(self.state_shape)
+        b_i = torch.zeros(self.state_shape, requires_grad=True)
+        b_f = torch.zeros(self.state_shape, requires_grad=True)
+        b_c = torch.zeros(self.state_shape, requires_grad=True)
+        b_o = torch.zeros(self.state_shape, requires_grad=True)
         
         sigmoid = nn.Sigmoid()
         tanh = nn.Tanh()
