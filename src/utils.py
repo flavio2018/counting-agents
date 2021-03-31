@@ -1,3 +1,7 @@
+"""
+This file contains some utility functions used in different classes.
+"""
+
 import torch
 from torch import nn
 

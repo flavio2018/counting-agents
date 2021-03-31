@@ -1,9 +1,15 @@
-# Reference: https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+"""
+This file contains the implementation of the optimization procedure used to train the agents' networks in a reinforcement learning setting using the Q-Learning algorithm. The code assumes the use of an external Replay Memory (implemented in ReplayMemory.py) and the use of a Policy Network and a Target Network to improve stability.
+
+This file also contains two functions implementing the softmax and the epsilong-greedy action selection policies, used to choose the next action of the agent based on the Q Values computed by the network.
+
+References: 
+    - https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
+"""
 
 import random
 import torch
 from torch import nn
-#import math
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -63,7 +69,16 @@ def eps_greedy_action_selection(state, policy_net, eps):
     #, device=device) # TODO GPU
 
 def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, gamma=0.999, batch_size=100):
-    
+    """
+    Args:
+        - replay_memory: The Replay Memory used to make observations uncorrelated.
+        - policy_net: The Policy Network
+        - target_net: The Target Network
+        - loss_fn: The loss function chosen.
+        - optimizer: PyTorch implementation of the chosen optimization algorithm
+        - gamma: Gamma parameter in the Q-Learning algorithm
+        - batch_size: Size of the batch sampled from the Replay Memory
+    """
     # skip optimization when there is not a sufficient number of samples 
     # in the replay memory
     if len(replay_memory) < batch_size:
@@ -103,7 +118,7 @@ def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, ga
     # Compute the expected Q values
     expected_state_action_values = (next_state_values * gamma) + reward_batch
 
-    # Compute Huber loss
+    # Compute loss
     loss_val = loss_fn(state_action_values, expected_state_action_values.unsqueeze(1))
 
     # Optimize the model
