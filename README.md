@@ -1,9 +1,7 @@
 
 # RL communicating numbers
 
-<img src="sketch_model_v2.png" alt="sketch_model_v2" width="400" />
-
-<img src="model_dynamics_v1.png" alt="model_dynamics_v1"  width="400" />
+<img src="sketch_model_v2.png" alt="sketch_model_v2" width="400" /> <img src="model_dynamics_v1.png" alt="model_dynamics_v1"  width="400" />
 
 
 ### Overall idea
