@@ -1,9 +1,10 @@
 
 # RL communicating numbers
 
+<img src="sketch_model_v2.png" alt="sketch_model_v2" width="400" />
 
+<img src="model_dynamics_v1.png" alt="model_dynamics_v1"  width="400" />
 
-<img src="/home/silvester/phd/projects/rl_number_communication/sketch_model_v2.png" alt="sketch_model_v2" style="zoom:60%;" /><img src="/home/silvester/phd/projects/rl_number_communication/model_dynamics_v1.png" alt="model_dynamics_v1" style="zoom:50%;" />
 
 ### Overall idea
 
