@@ -1,4 +1,6 @@
-# References
+"""
+This script contains the class of the complete agent involved in the communication/counting task. The agent is composed of a core ConvLSTM module and two Fully Connected layers which build a visual representation and it's mapping to the actions space, respectively.
+"""
 
 import torch
 from torch import nn

@@ -1,7 +1,9 @@
-# from: https://discuss.pytorch.org/t/passing-hidden-layers-to-convlstm/52814/3
-# references:
-#   - https://pytorch.org/docs/stable/generated/torch.nn.BatchNorm2d.html
-#   - https://pytorch.org/docs/stable/generated/torch.nn.Dropout2d.html
+"""
+This script contains the PyTorch implementation of the core ConvLSTM cell of the agent model.
+
+References:
+  - https://discuss.pytorch.org/t/passing-hidden-layers-to-convlstm/52814/3
+"""
 
 import torch
 from torch import nn

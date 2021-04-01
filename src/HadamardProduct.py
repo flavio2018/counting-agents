@@ -1,3 +1,10 @@
+"""
+This file contains the PyTorch implementation of a simple Hadamard Product layer.
+
+References:
+  - https://discuss.pytorch.org/t/passing-hidden-layers-to-convlstm/52814/3
+"""
+
 import torch
 from torch import nn
 
