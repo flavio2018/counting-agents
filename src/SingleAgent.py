@@ -121,6 +121,8 @@ class SingleRLAgent():
         self.fingerlayer = FingerLayer(self.obs_dim)
 
     def merge_actions(self, action_dicts):
+        """This function creates the actions dict for the complete environment merging the ones related to the individual environment parts.
+        """
         self.all_actions_list = []
         self.all_actions_dict = {}
         _n = 0
@@ -138,6 +140,8 @@ class SingleRLAgent():
         return self.all_actions_list, self.all_actions_dict
 
     def rewrite_action_keys(self, _dict):
+        """Function used to rewrite keys of individual action-spaces, so they do not overlap in the global action space.
+        """
         rewritten_dict = {}
         for key, value in _dict.items():
             if(isinstance(key, int)):
@@ -235,7 +239,7 @@ class OtherInteractions():
     def step(self, action):
         if(action=='submit'):
             self.is_submitted_ext_repr = True
-            self.submitted_ext_repr = self.ext_repr.externalrepresentation
+            self.submitted_ext_repr = self.ext_repr.externalrepresentation # TODO: this won't work
         elif(action=='larger'):
             pass
         elif(action=='smaller'):
