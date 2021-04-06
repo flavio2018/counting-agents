@@ -94,16 +94,16 @@ class ConvLSTMCell(nn.Module):
         # Dropouts
         self.H_drop = nn.Dropout2d(p=self.dropout)
         self.C_drop = nn.Dropout2d(p=self.dropout)
-
-        self.apply(initialize_weights)
-    
-    def forward(self, x):
+        
         # TODO update?
         b_i = torch.zeros(self.state_shape, requires_grad=True)
         b_f = torch.zeros(self.state_shape, requires_grad=True)
         b_c = torch.zeros(self.state_shape, requires_grad=True)
         b_o = torch.zeros(self.state_shape, requires_grad=True)
         
+        self.apply(initialize_weights)
+    
+    def forward(self, x):
         sigmoid = nn.Sigmoid()
         tanh = nn.Tanh()
         

@@ -20,17 +20,23 @@ class SingleRLAgent():
         model=None
         self.max_objects = agent_params['max_objects']
         self.obs_dim = agent_params['obs_dim']
+        
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
         self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
+        
         # Initialize external representation (the piece of paper the agent is writing on)
         self.ext_repr = ExternalRepresentation(self.obs_dim)
+        
         # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
         self.fingerlayer = FingerLayer(self.obs_dim)
+        
         # Initialize whole state space: concatenated observation and external representation
         self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
+        
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         self.otherinteractions = OtherInteractions()
+        
         # Initialize action
         self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer.actions, self.otherinteractions.actions])
         self.all_actions_dict_inv = dict([reversed(i) for i in self.all_actions_dict.items()])
@@ -38,6 +44,7 @@ class SingleRLAgent():
         for key, value in self.all_actions_dict_inv.items():
             int_to_int[value] = value
         self.all_actions_dict_inv.update(int_to_int)
+        
         # Rewrite keys of individual action-spaces, so they do not overlap in the global action space
         self.ext_repr.actions = self.rewrite_action_keys(self.ext_repr.actions)
         self.fingerlayer.actions = self.rewrite_action_keys(self.fingerlayer.actions)
