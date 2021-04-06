@@ -1,3 +1,6 @@
+"""
+This file contains the implementation of the environment from the point of view of a single agent. The environment class SingleRLAgent embeds three subclasses (FingerLayer, ExternalRepresentation, OtherInteractions) which implement the dynamics of the different environment parts.
+"""
 import time
 from PIL import Image, ImageDraw
 from IPython.display import display, update_display
@@ -10,6 +13,9 @@ from PIL import ImageFont
 #from fonts.ttf import AmaticSC
 
 class SingleRLAgent():
+    """
+    This class implements the environment as a whole.
+    """
     def __init__(self, agent_params):
         model=None
         self.max_objects = agent_params['max_objects']
@@ -136,6 +142,9 @@ class SingleRLAgent():
         return rewritten_dict
 
 class FingerLayer():
+    """
+    This class implements the finger movement part of the environment.
+    """
     def __init__(self, dim):
         self.dim = dim
         self.fingerlayer = np.zeros((dim, dim))
@@ -178,6 +187,9 @@ class FingerLayer():
 
 
 class ExternalRepresentation():
+    """
+    This class implements the external representation in the environment.
+    """
     def __init__(self, dim):
         self.dim = dim
         self.externalrepresentation = np.zeros((dim, dim))
@@ -198,6 +210,9 @@ class ExternalRepresentation():
 
 
 class OtherInteractions():
+    """
+    This class implements the environmental responses to actions related to communication with the other agent ('submit') or to the communication of the final answer ('larger', 'smaller').
+    """
     def __init__(self):
         self.actions = {
             0: 'submit',  # Keys will be overwritten when merged with another action-space
@@ -223,15 +238,14 @@ class OtherInteractions():
 
 
 
+if __name__ == '__main__':
+    agent_params = {
+        'max_objects': 9,
+        'obs_dim': 4,
+    }
 
 
-agent_params = {
-    'max_objects': 9,
-    'obs_dim': 4,
-}
-
-
-agent = SingleRLAgent(agent_params)
-agent.render()
-action = 'mod_point'
-agent.step(action)
+    agent = SingleRLAgent(agent_params)
+    agent.render()
+    action = 'mod_point'
+    agent.step(action)
