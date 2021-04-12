@@ -59,7 +59,7 @@ class ConvLSTMCell(nn.Module):
         }
 
         self.state_shape = (
-            #1, # no batches
+            1, # no batches
             self.n_kernels,
             self.input_dim,
             self.input_dim
