@@ -91,11 +91,12 @@ class SingleAgentEnv():
         
         return self.state, reward, done, 'info'
     
-    def select_action(self):
+    def select_action(self, q_values):
         # Interface with Flavio's pytorch-agent:
         # output = convlstm_model(self.state)
         # action = set to discrete actions of output
-        pass
+        action_space = q_values[:-num_objects]
+        
 
     def render(self, display_id=None):
         img_height=200
@@ -262,7 +263,7 @@ class OtherInteractions():
     def step(self, action, max_objects, true_label):
         if(action=='submit'):
             reward = 0
-            label_slice = action[:-max_objects]
+            label_slice = action[-max_objects:]
             if label_slice == true_label:
                 reward = 1
             return reward

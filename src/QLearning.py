@@ -70,6 +70,23 @@ def eps_greedy_action_selection(state, policy_net, eps):
         return torch.tensor([[random.randrange(n_actions)]], dtype=torch.long)
     #, device=device) # TODO GPU
 
+def eps_greedy_modified(state, policy_net, eps):
+    action = 100 # any big number
+    n_actions = 6
+    
+    while action > n_actions:
+        sample = random.random()
+        if sample with torch.no_grad():
+            policy_net.eval()
+            # t.max(1) will return largest column value of each row.
+            # second column on max result is index of where max element was
+            # found, so we pick action with the larger expected reward.
+            action = policy_net(state).max(0)[1].view(1,1)
+        else:
+            action = torch.tensor([[random.randrange(n_actions)]], dtype=torch.long)
+    
+    return action
+
 def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, gamma=0.999, batch_size=100):
     """
     Args:
