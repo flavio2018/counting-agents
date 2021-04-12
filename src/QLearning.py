@@ -76,12 +76,13 @@ def eps_greedy_modified(state, policy_net, eps):
     
     while action > n_actions:
         sample = random.random()
-        if sample with torch.no_grad():
-            policy_net.eval()
-            # t.max(1) will return largest column value of each row.
-            # second column on max result is index of where max element was
-            # found, so we pick action with the larger expected reward.
-            action = policy_net(state).max(0)[1].view(1,1)
+        if sample > eps:
+            with torch.no_grad():
+                policy_net.eval()
+                # t.max(1) will return largest column value of each row.
+                # second column on max result is index of where max element was
+                # found, so we pick action with the larger expected reward.
+                action = policy_net(state).max(0)[1].view(1,1)
         else:
             action = torch.tensor([[random.randrange(n_actions)]], dtype=torch.long)
     
