@@ -50,7 +50,7 @@ class SingleAgentEnv():
         self.fingerlayer.actions = self.rewrite_action_keys(self.fingerlayer.actions)
 
         self.action_dim = len(self.all_actions_list)
-        self.action = np.zeros(self.action_dim)
+        self.action = np.zeros(self.action_dim, 1)
 
         # Initialize neural network model: maps observation-->action
         self.model = model
