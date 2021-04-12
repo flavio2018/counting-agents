@@ -59,7 +59,7 @@ class SingleAgentEnv():
         self.submitted_ext_repr = None
 
     def step(self, action):
-        # Define how actiocn interacts with environment: e.g. with observation space and external representation
+        # Define how action interacts with environment: e.g. with observation space and external representation
         # self.obs.step(action_on_obs[action]) # no interaction with the observation space yet
 
         if(action in self.fingerlayer.actions):
@@ -76,7 +76,7 @@ class SingleAgentEnv():
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int. When trained action-array is input.
-        self.action = np.zeros(self.action_dim)
+        self.action = np.zeros(self.action_dim, 1)
         self.action[self.all_actions_dict_inv[action]] = 1
 
     def select_action(self):
