@@ -36,7 +36,7 @@ class SingleAgentEnv():
         self.fingerlayer = FingerLayer(self.obs_dim)
         
         # Initialize whole state space: concatenated observation and external representation
-        self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
+        self.state = np.stack([[self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation]])
         
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         self.otherinteractions = OtherInteractions()
@@ -87,7 +87,7 @@ class SingleAgentEnv():
         self.action = np.zeros((self.action_dim, 1))
         self.action[self.all_actions_dict_inv[action]] = 1
         
-        self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
+        self.state = np.stack([[self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation]])
         
         return self.state, reward, done, 'info'
     
@@ -141,7 +141,7 @@ class SingleAgentEnv():
         self.fingerlayer = FingerLayer(self.obs_dim)
         
         # reset whole state
-        self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
+        self.state = np.stack([[self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation]])
         
         return self.state
 
