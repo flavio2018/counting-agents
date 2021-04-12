@@ -114,9 +114,9 @@ class SingleAgentEnv():
         return total_img
 
     def reset(self):
-        self.obs = np.zeros((self.dim, self.dim))
-        self.obs.ravel()[np.random.choice(obs.size, self.max_objects, replace=False)] = 1
-        self.ext_repr = np.zeros((self.dim, self.dim))
+        self.obs = np.zeros((self.obs_dim, self.obs_dim))
+        self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
+        self.ext_repr = ExternalRepresentation(self.obs_dim)
         self.fingerlayer = FingerLayer(self.obs_dim)
 
     def merge_actions(self, action_dicts):
