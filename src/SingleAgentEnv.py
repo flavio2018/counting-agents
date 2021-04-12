@@ -259,7 +259,7 @@ class OtherInteractions():
             str_to_str[value] = value
         self.actions.update(str_to_str)
 
-    def step(self, action, max_objects):
+    def step(self, action, max_objects, true_label):
         if(action=='submit'):
             reward = 0
             label_slice = action[:-max_objects]
