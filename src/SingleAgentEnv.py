@@ -50,7 +50,7 @@ class SingleAgentEnv():
         self.fingerlayer.actions = self.rewrite_action_keys(self.fingerlayer.actions)
 
         self.action_dim = len(self.all_actions_list)
-        self.action = np.zeros(self.action_dim, 1)
+        self.action = np.zeros((self.action_dim, 1))
 
         # Initialize neural network model: maps observation-->action
         self.model = model
@@ -76,7 +76,7 @@ class SingleAgentEnv():
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int. When trained action-array is input.
-        self.action = np.zeros(self.action_dim, 1)
+        self.action = np.zeros((self.action_dim, 1))
         self.action[self.all_actions_dict_inv[action]] = 1
 
     def select_action(self):
