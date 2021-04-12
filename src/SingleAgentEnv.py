@@ -12,7 +12,7 @@ import random
 from PIL import ImageFont
 #from fonts.ttf import AmaticSC
 
-class SingleRLAgent():
+class SingleAgentEnv():
     """
     This class implements the environment as a whole.
     """
