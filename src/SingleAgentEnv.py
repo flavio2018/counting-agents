@@ -24,6 +24,10 @@ class SingleAgentEnv():
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
         self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
+        # associated label
+        num_objects = self.obs.sum(dtype=int)
+        self.obs_label = np.zeros(self.max_objects)
+        self.obs_label[num_objects-1] = 1
         
         # Initialize external representation (the piece of paper the agent is writing on)
         self.ext_repr = ExternalRepresentation(self.obs_dim)
@@ -61,6 +65,9 @@ class SingleAgentEnv():
     def step(self, action):
         # Define how action interacts with environment: e.g. with observation space and external representation
         # self.obs.step(action_on_obs[action]) # no interaction with the observation space yet
+        
+        done = False # signal episode ending
+        reward = 0 # TODO: reward when finger on object
 
         if(action in self.fingerlayer.actions):
             self.fingerlayer.step(action)
@@ -72,13 +79,18 @@ class SingleAgentEnv():
             self.ext_repr.draw_point([self.fingerlayer.pos_x, self.fingerlayer.pos_y])
 
         if(action in self.otherinteractions.actions):
-            self.otherinteractions.step(action)
+            reward = self.otherinteractions.step(action, self.max_objects, self.obs_label)
+            done = True
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int. When trained action-array is input.
         self.action = np.zeros((self.action_dim, 1))
         self.action[self.all_actions_dict_inv[action]] = 1
-
+        
+        self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
+        
+        return self.state, reward, done, 'info'
+    
     def select_action(self):
         # Interface with Flavio's pytorch-agent:
         # output = convlstm_model(self.state)
@@ -114,10 +126,24 @@ class SingleAgentEnv():
         return total_img
 
     def reset(self):
+        # generate new observation
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
         self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
+        # associated label
+        num_objects = self.obs.sum(dtype=int)
+        self.obs_label = np.zeros(self.max_objects)
+        self.obs_label[num_objects-1] = 1
+        
+        # reset external representation
         self.ext_repr = ExternalRepresentation(self.obs_dim)
+        
+        # reset finger layer
         self.fingerlayer = FingerLayer(self.obs_dim)
+        
+        # reset whole state
+        self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
+        
+        return self.state
 
     def merge_actions(self, action_dicts):
         """This function creates the actions dict for the complete environment merging the ones related to the individual environment parts.
@@ -221,7 +247,7 @@ class ExternalRepresentation():
 
 class OtherInteractions():
     """
-    This class implements the environmental responses to actions related to communication with the other agent ('submit') or to the communication of the final answer ('larger', 'smaller').
+    This class implements the environmental responses to actions related to the task (submit numerosity label).
     """
     def __init__(self):
         self.actions = {
@@ -233,11 +259,13 @@ class OtherInteractions():
             str_to_str[value] = value
         self.actions.update(str_to_str)
 
-    def step(self, action):
+    def step(self, action, max_objects):
         if(action=='submit'):
-            self.is_submitted_ext_repr = True
-            #self.submitted_ext_repr = self.ext_repr.externalrepresentation # TODO: this won't work
-
+            reward = 0
+            label_slice = action[:-max_objects]
+            if label_slice == true_label:
+                reward = 1
+            return reward
 
 
 
