@@ -70,7 +70,7 @@ class SingleAgentEnv():
         done = False # signal episode ending
         reward = 0 # TODO: reward when finger on object
         
-        action = self.eps_greedy_modified(q_value) #TODO: generalize
+        action = self.eps_greedy_modified(q_values) #TODO: generalize
 
         if(action in self.fingerlayer.actions):
             self.fingerlayer.step(action)
