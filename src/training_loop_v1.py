@@ -29,7 +29,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
         
         while not done:
             # Choose the action following the policy
-            action = policy(policy_net, state, policy_param)
+            action = policy(state, policy_net, policy_param)
             next_state, reward, done, info = env.step(action)
             
             if done: next_state = None
