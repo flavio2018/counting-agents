@@ -37,7 +37,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             if done: next_state = None
                 
             # Store the transition in memory
-            replay_memory.push(state, action, next_state, reward)
+            replay_memory.push(state, q_values, next_state, reward)
             
             # Move to the next state
             state = next_state
