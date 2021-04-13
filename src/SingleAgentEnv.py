@@ -82,7 +82,7 @@ class SingleAgentEnv():
             self.ext_repr.draw_point([self.fingerlayer.pos_x, self.fingerlayer.pos_y])
 
         if(action in self.otherinteractions.actions):
-            self.otherinteractions.step(action, q_values, self.max_objects, self.obs_label)
+            self.otherinteractions.step(action, self.max_objects, self.obs_label)
             done = True
         
         reward = self.get_reward(q_values)
