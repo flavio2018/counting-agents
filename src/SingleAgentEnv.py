@@ -7,6 +7,7 @@ from IPython.display import display, update_display
 import numpy as np
 import utils
 import random
+import torch
 
 # TODO (?): later in utils
 from PIL import ImageFont
@@ -89,7 +90,7 @@ class SingleAgentEnv():
         
         self.state = np.stack([[self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation]])
         
-        return self.state, reward, done, 'info'
+        return torch.Tensor(self.state), reward, done, 'info'
     
     def select_action(self, q_values):
         # Interface with Flavio's pytorch-agent:
@@ -144,7 +145,7 @@ class SingleAgentEnv():
         # reset whole state
         self.state = np.stack([[self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation]])
         
-        return self.state
+        return torch.Tensor(self.state)
 
     def merge_actions(self, action_dicts):
         """This function creates the actions dict for the complete environment merging the ones related to the individual environment parts.
