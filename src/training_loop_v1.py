@@ -1,6 +1,7 @@
 """
 This file contains the training loop for the agents involved in the communication/counting task. The loop involves two CountingAgents objects, a Gym-like environment and includes the optimization procedure based on Q-Learning.
 """
+from QLearning import optimize_model
 
 def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, eps=None, tau=None, target_update=10):
     """
