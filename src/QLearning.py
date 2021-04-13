@@ -70,6 +70,13 @@ def eps_greedy_action_selection(state, policy_net, eps):
         return torch.tensor([[random.randrange(n_actions)]], dtype=torch.long)
     #, device=device) # TODO GPU
 
+def get_qvalues(state, policy_net):
+    with torch.no_grad():
+        policy_net.eval()
+        q_values = policy_net(state) # we start from 0
+    
+    return q_values
+
 def eps_greedy_modified(state, policy_net, eps):
     action = 100 # any big number
     n_actions = 6

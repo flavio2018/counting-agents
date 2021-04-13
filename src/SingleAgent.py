@@ -8,7 +8,7 @@ import numpy as np
 import utils
 import random
 
-# later in utils
+# TODO (?): later in utils
 from PIL import ImageFont
 #from fonts.ttf import AmaticSC
 
