@@ -63,12 +63,14 @@ class SingleAgentEnv():
         self.is_submitted_ext_repr = False
         self.submitted_ext_repr = None
 
-    def step(self, action):
+    def step(self, q_values):
         # Define how action interacts with environment: e.g. with observation space and external representation
         # self.obs.step(action_on_obs[action]) # no interaction with the observation space yet
         
         done = False # signal episode ending
         reward = 0 # TODO: reward when finger on object
+        
+        action = self.eps_greedy_modified(q_value) #TODO: generalize
 
         if(action in self.fingerlayer.actions):
             self.fingerlayer.step(action)
@@ -80,8 +82,10 @@ class SingleAgentEnv():
             self.ext_repr.draw_point([self.fingerlayer.pos_x, self.fingerlayer.pos_y])
 
         if(action in self.otherinteractions.actions):
-            reward = self.otherinteractions.step(action, self.max_objects, self.obs_label)
+            self.otherinteractions.step(action, q_values, self.max_objects, self.obs_label)
             done = True
+        
+        reward = self.get_reward(q_values)
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int. When trained action-array is input.
@@ -92,13 +96,26 @@ class SingleAgentEnv():
         
         return torch.Tensor(self.state), reward, done, 'info'
     
-    def select_action(self, q_values):
-        # Interface with Flavio's pytorch-agent:
-        # output = convlstm_model(self.state)
-        # action = set to discrete actions of output
-        action_space = q_values[:-num_objects]
+    #def select_action(self, q_values):
+        ## Interface with Flavio's pytorch-agent:
+        ## output = convlstm_model(self.state)
+        ## action = set to discrete actions of output
+        #action_space = q_values[:-num_objects]
         
-
+    def eps_greedy_modified(self, q_values):
+        action = 100 # any big number
+        n_actions = 6
+        eps = .1 # TODO: not-hardcoded
+        
+        while action > n_actions:
+            sample = random.random()
+            if sample > eps:
+                action = q_values.max(0)[1].item() - 1 # we start from 0
+            else:
+                action = random.randrange(n_actions)
+        
+        return action
+        
     def render(self, display_id=None):
         img_height=200
         self.obs_img = Image.fromarray(self.obs*255).resize( (img_height,img_height), resample=0)
@@ -178,7 +195,28 @@ class SingleAgentEnv():
             str_to_str[value] = value
         rewritten_dict.update(str_to_str)
         return rewritten_dict
-
+    
+    def compare_labels(self, agent_label, true_label):
+        """Encode here the label comparison dynamics.
+        """
+        label_dist = np.abs(np.argmax(agent_label) - np.argmax(true_label))
+        
+        return label_dist
+    
+    def get_reward(self, q_values):
+        label_slice = q_values[-self.max_objects:]
+        label_dist = self.compare_labels(label_slice, self.obs_label)
+        if label_dist == 0:
+            reward = 1
+        if label_dist < 2:
+            reward = .5
+        if label_dist < 3:
+            reward = .2
+        else:
+            reward = 0
+        
+        return reward
+        
 class FingerLayer():
     """
     This class implements the finger movement part of the environment.
@@ -263,11 +301,8 @@ class OtherInteractions():
 
     def step(self, action, max_objects, true_label):
         if(action=='submit'):
-            reward = 0
-            label_slice = action[-max_objects:]
-            if label_slice == true_label:
-                reward = 1
-            return reward
+            pass
+            # TODO: what happens here?
 
 
 
