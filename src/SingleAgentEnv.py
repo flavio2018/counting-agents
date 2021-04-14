@@ -75,19 +75,19 @@ class SingleAgentEnv():
         
         action = self.eps_greedy_modified(q_values) #TODO: generalize
 
-        if(action in self.fingerlayer_scene.actions):
+        if(action in self.fingerlayer_scene.action_codes):
             self.fingerlayer_scene.step(action, self.actions_dict)
             
-        elif(action in self.fingerlayer_repr.actions):
+        elif(action in self.fingerlayer_repr.action_codes):
             self.fingerlayer_repr.step(action, self.actions_dict)
 
         # For action on external representation:
         # Give as argument: either pixel-positions (1D or 2D) to draw on.
         #                   or draw_point/not-draw at the current finger-position
-        elif(action in self.ext_repr.actions):
+        elif(action in self.ext_repr.action_codes):
             self.ext_repr.draw_point([self.fingerlayer_repr.pos_x, self.fingerlayer_repr.pos_y])
 
-        elif(action in self.otherinteractions.actions):
+        elif(action in self.otherinteractions.action_codes):
             self.otherinteractions.step(action, self.max_objects, self.obs_label)
             done = True
         
@@ -143,12 +143,12 @@ class SingleAgentEnv():
         self.finger_scene_img = Image.fromarray(self.fingerlayer_scene.fingerlayer*255).resize( (img_height,img_height), resample=0)
         self.finger_scene_img = utils.add_grid_lines(self.finger_scene_img, self.fingerlayer_scene.fingerlayer)
         self.finger_scene_img = self.finger_scene_img.transpose(Image.TRANSPOSE)
-        self.finger_scene_img = utils.annotate_below(self.finger_scene_img, "Finger layer")
+        self.finger_scene_img = utils.annotate_below(self.finger_scene_img, "Finger layer scene")
         
         self.finger_repr_img = Image.fromarray(self.fingerlayer_repr.fingerlayer*255).resize( (img_height,img_height), resample=0)
         self.finger_repr_img = utils.add_grid_lines(self.finger_repr_img, self.fingerlayer_repr.fingerlayer)
         self.finger_repr_img = self.finger_repr_img.transpose(Image.TRANSPOSE)
-        self.finger_repr_img = utils.annotate_below(self.finger_repr_img, "Finger layer")
+        self.finger_repr_img = utils.annotate_below(self.finger_repr_img, "Finger layer repr.")
         
         total_img = utils.concat_imgs_h([self.obs_img, self.finger_repr_img, self.finger_repr_img, self.ext_repr_img, self.action_img], dist=10).convert('RGB')
         
@@ -254,18 +254,16 @@ class FingerLayer():
         # This dictionary translates the total action-array to the Finger-action-strings:
         # Key will be overwritten when merged with another action-space
         actions = ['left', 'right', 'up', 'down']
+        self.action_codes = set()
+        
         i = 0
         for k, v in env_actions_dict.items():
             if v == '' and i < len(actions):
                 env_actions_dict[k] = actions[i]
+                self.action_codes.add(k)
                 i += 1
         
-        #self.actions = {
-            #0: 'left',
-            #1: 'right',
-            #2: 'up',
-            #3: 'down'
-        #}
+        
         # revd=dict([reversed(i) for i in finger_movement.items()])
         
         # Add each value as key as well. so in the end both integers (original keys) and strings (original values) can be input
@@ -301,10 +299,13 @@ class ExternalRepresentation():
         self.externalrepresentation = np.zeros((dim, dim))
         
         actions = ['mod_point']
+        self.action_codes = set()
+        
         i = 0
         for k, v in env_actions_dict.items():
             if v == '' and i < len(actions):
                 env_actions_dict[k] = actions[i]
+                self.action_codes.add(k)
                 i += 1
         
         #self.actions = {
@@ -330,10 +331,13 @@ class OtherInteractions():
     def __init__(self, no_actions, env_actions_dict):
         
         actions = ['submit']
+        self.action_codes = set()
+        
         i = 0
         for k, v in env_actions_dict.items():
             if v == '' and i < len(actions):
                 env_actions_dict[k] = actions[i]
+                self.action_codes.add(k)
                 i += 1
                 
         #self.actions = {
