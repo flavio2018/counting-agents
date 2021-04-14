@@ -150,7 +150,7 @@ class SingleAgentEnv():
         self.finger_repr_img = self.finger_repr_img.transpose(Image.TRANSPOSE)
         self.finger_repr_img = utils.annotate_below(self.finger_repr_img, "Finger layer repr.")
         
-        total_img = utils.concat_imgs_h([self.obs_img, self.finger_repr_img, self.finger_repr_img, self.ext_repr_img, self.action_img], dist=10).convert('RGB')
+        total_img = utils.concat_imgs_h([self.obs_img, self.finger_scene_img, self.finger_repr_img, self.ext_repr_img, self.action_img], dist=10).convert('RGB')
         
         if(display_id is not None):
             display(total_img, display_id=display_id)
