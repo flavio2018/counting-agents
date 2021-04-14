@@ -254,9 +254,11 @@ class FingerLayer():
         # This dictionary translates the total action-array to the Finger-action-strings:
         # Key will be overwritten when merged with another action-space
         actions = ['left', 'right', 'up', 'down']
-        for i, (k, v) in enumerate(env_actions_dict.items()):
+        i = 0
+        for k, v in env_actions_dict.items():
             if v == '':
                 env_actions_dict[k] = actions[i]
+                i += 1
         
         #self.actions = {
             #0: 'left',
@@ -299,9 +301,11 @@ class ExternalRepresentation():
         self.externalrepresentation = np.zeros((dim, dim))
         
         actions = ['mod_point']
-        for i, (k, v) in enumerate(env_actions_dict.items()):
+        i = 0
+        for k, v in env_actions_dict.items():
             if v == '':
                 env_actions_dict[k] = actions[i]
+                i += 1
         
         #self.actions = {
             #0: 'mod_point',      # Keys will be overwritten when merged with another action-space
@@ -326,9 +330,11 @@ class OtherInteractions():
     def __init__(self, no_actions, env_actions_dict):
         
         actions = ['submit']
-        for i, (k, v) in enumerate(env_actions_dict.items()):
+        i = 0
+        for k, v in env_actions_dict.items():
             if v == '':
                 env_actions_dict[k] = actions[i]
+                i += 1
                 
         #self.actions = {
             #0: 'submit'
