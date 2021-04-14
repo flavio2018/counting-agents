@@ -185,6 +185,15 @@ class SingleAgentEnv():
             reward = .2
         else:
             reward = 0
+            
+        # reward based on scene finger position
+        finger_index = self.fingerlayer_scene.fingerlayer.argmax()
+        finger_position = np.unravel_index(finger_index, self.fingerlayer_scene.fingerlayer.shape)
+        
+        if self.obs[finger_position] == 1:
+            reward += 0.1 # TODO: diminishing reward?
+            
+        # TODO: reward showing how to create repr. for small quantities 
         
         return reward
         
