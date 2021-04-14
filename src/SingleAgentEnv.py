@@ -286,7 +286,7 @@ class FingerLayer():
         elif(move_action_str=="down"):
             if (self.pos_y < self.max_y):
                 self.pos_y += 1
-        self.fingerlayer = np.zeros((self.dim, self.dim))
+        self.fingerlayer = np.zeros((self.layer_dim, self.layer_dim))
         self.fingerlayer[self.pos_x, self.pos_y] = 1
 
 
@@ -294,9 +294,9 @@ class ExternalRepresentation():
     """
     This class implements the external representation in the environment.
     """
-    def __init__(self, dim, no_actions, env_actions_dict):
-        self.dim = dim
-        self.externalrepresentation = np.zeros((dim, dim))
+    def __init__(self, layer_dim, no_actions, env_actions_dict):
+        self.layer_dim = layer_dim
+        self.externalrepresentation = np.zeros((layer_dim, layer_dim))
         
         actions = ['mod_point']
         self.action_codes = set()
