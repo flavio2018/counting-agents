@@ -21,6 +21,7 @@ class SingleAgentEnv():
         model=None
         self.max_objects = agent_params['max_objects']
         self.obs_dim = agent_params['obs_dim']
+        self.actions = { n : '' for n in range(agent_params['n_actions']) } 
         
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
@@ -31,33 +32,33 @@ class SingleAgentEnv():
         self.obs_label[num_objects-1] = 1
         
         # Initialize external representation (the piece of paper the agent is writing on)
-        self.ext_repr = ExternalRepresentation(self.obs_dim)
+        self.ext_repr = ExternalRepresentation(self.obs_dim, len(self.actions), self.actions)
         
         # Initialize Finger layers: Single 1 in 0-grid of shape dim x dim
-        self.fingerlayer_scene = FingerLayer(self.obs_dim)
-        self.fingerlayer_repr = FingerLayer(self.obs_dim)
+        self.fingerlayer_scene = FingerLayer(self.obs_dim, len(self.actions), self.actions)
+        self.fingerlayer_repr = FingerLayer(self.obs_dim, len(self.actions), self.actions)
         
         # Initialize whole state space: concatenated observation and external representation
         self.build_state()
         
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
-        self.otherinteractions = OtherInteractions()
+        self.otherinteractions = OtherInteractions(len(self.actions), self.actions)
         
         # Initialize action
-        self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer_scene.actions, self.fingerlayer_repr.actions, self.otherinteractions.actions])
-        self.all_actions_dict_inv = dict([reversed(i) for i in self.all_actions_dict.items()])
-        int_to_int = {}
-        for key, value in self.all_actions_dict_inv.items():
-            int_to_int[value] = value
-        self.all_actions_dict_inv.update(int_to_int)
+        #self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer_scene.actions, self.fingerlayer_repr.actions, self.otherinteractions.actions])
+        #self.all_actions_dict_inv = dict([reversed(i) for i in self.all_actions_dict.items()])
+        #int_to_int = {}
+        #for key, value in self.all_actions_dict_inv.items():
+            #int_to_int[value] = value
+        #self.all_actions_dict_inv.update(int_to_int)
         
-        # Rewrite keys of individual action-spaces, so they do not overlap in the global action space
-        self.ext_repr.actions = self.rewrite_action_keys(self.ext_repr.actions)
-        self.fingerlayer_scene.actions = self.rewrite_action_keys(self.fingerlayer_scene.actions)
-        self.fingerlayer_repr.actions = self.rewrite_action_keys(self.fingerlayer_repr.actions)
+        ## Rewrite keys of individual action-spaces, so they do not overlap in the global action space
+        #self.ext_repr.actions = self.rewrite_action_keys(self.ext_repr.actions)
+        #self.fingerlayer_scene.actions = self.rewrite_action_keys(self.fingerlayer_scene.actions)
+        #self.fingerlayer_repr.actions = self.rewrite_action_keys(self.fingerlayer_repr.actions)
 
-        self.action_dim = len(self.all_actions_list)
-        self.action = np.zeros((self.action_dim, 1))
+        #self.action_dim = len(self.all_actions_list)
+        self.action = np.zeros((len(self.actions), 1))
 
         # Initialize neural network model: maps observation-->action
         self.model = model
@@ -94,7 +95,7 @@ class SingleAgentEnv():
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int. When trained action-array is input.
-        self.action = np.zeros((self.action_dim, 1))
+        self.action = np.zeros((len(self.actions), 1))
         self.action[self.all_actions_dict_inv[action]] = 1
         
         self.build_state()
@@ -241,28 +242,35 @@ class FingerLayer():
     """
     This class implements the finger movement part of the environment.
     """
-    def __init__(self, dim):
-        self.dim = dim
-        self.fingerlayer = np.zeros((dim, dim))
-        self.max_x = dim-1
-        self.max_y = dim-1
-        self.pos_x = random.randint(0, dim-1)
-        self.pos_y = random.randint(0, dim-1)
+    def __init__(self, layer_dim, no_actions, env_actions_dict):
+        self.layer_dim = layer_dim
+        self.fingerlayer = np.zeros((layer_dim, layer_dim))
+        self.max_x = layer_dim-1
+        self.max_y = layer_dim-1
+        self.pos_x = random.randint(0, layer_dim-1)
+        self.pos_y = random.randint(0, layer_dim-1)
         self.fingerlayer[self.pos_x, self.pos_y] = 1
+        
         # This dictionary translates the total action-array to the Finger-action-strings:
         # Key will be overwritten when merged with another action-space
-        self.actions = {
-            0: 'left',
-            1: 'right',
-            2: 'up',
-            3: 'down'
-        }
+        actions = ['left', 'right', 'up', 'down']
+        for i, (k, v) in enumerate(env_actions_dict.items()):
+            if v == '':
+                env_actions_dict[k] = actions[i]
+        
+        #self.actions = {
+            #0: 'left',
+            #1: 'right',
+            #2: 'up',
+            #3: 'down'
+        #}
         # revd=dict([reversed(i) for i in finger_movement.items()])
+        
         # Add each value as key as well. so in the end both integers (original keys) and strings (original values) can be input
-        str_to_str = {}
-        for key, value in self.actions.items():
-            str_to_str[value] = value
-        self.actions.update(str_to_str)
+        #str_to_str = {}
+        #for key, value in self.actions.items():
+            #str_to_str[value] = value
+        #self.actions.update(str_to_str)
 
     def step(self, move_action):
         move_action_str = self.actions[move_action]
@@ -286,16 +294,22 @@ class ExternalRepresentation():
     """
     This class implements the external representation in the environment.
     """
-    def __init__(self, dim):
+    def __init__(self, dim, no_actions, env_actions_dict):
         self.dim = dim
         self.externalrepresentation = np.zeros((dim, dim))
-        self.actions = {
-            0: 'mod_point',      # Keys will be overwritten when merged with another action-space
-        }
-        str_to_str = {}
-        for key,value in self.actions.items():
-            str_to_str[value] = value
-        self.actions.update(str_to_str)
+        
+        actions = ['mod_point']
+        for i, (k, v) in enumerate(env_actions_dict.items()):
+            if v == '':
+                env_actions_dict[k] = actions[i]
+        
+        #self.actions = {
+            #0: 'mod_point',      # Keys will be overwritten when merged with another action-space
+        #}
+        #str_to_str = {}
+        #for key,value in self.actions.items():
+            #str_to_str[value] = value
+        #self.actions.update(str_to_str)
 
     def draw(self, draw_pixels):
         self.externalrepresentation += draw_pixels
@@ -309,15 +323,21 @@ class OtherInteractions():
     """
     This class implements the environmental responses to actions related to the task (submit numerosity label).
     """
-    def __init__(self):
-        self.actions = {
-            0: 'submit'
-        }
+    def __init__(self, no_actions, env_actions_dict):
+        
+        actions = ['submit']
+        for i, (k, v) in enumerate(env_actions_dict.items()):
+            if v == '':
+                env_actions_dict[k] = actions[i]
+                
+        #self.actions = {
+            #0: 'submit'
+        #}
         # Add each value as key as well. so in the end both integers (original keys) and strings (original values) can be input
-        str_to_str = {}
-        for key, value in self.actions.items():
-            str_to_str[value] = value
-        self.actions.update(str_to_str)
+        #str_to_str = {}
+        #for key, value in self.actions.items():
+            #str_to_str[value] = value
+        #self.actions.update(str_to_str)
 
     def step(self, action, max_objects, true_label):
         if(action=='submit'):
