@@ -256,7 +256,7 @@ class FingerLayer():
         actions = ['left', 'right', 'up', 'down']
         i = 0
         for k, v in env_actions_dict.items():
-            if v == '':
+            if v == '' and i < len(actions):
                 env_actions_dict[k] = actions[i]
                 i += 1
         
@@ -303,7 +303,7 @@ class ExternalRepresentation():
         actions = ['mod_point']
         i = 0
         for k, v in env_actions_dict.items():
-            if v == '':
+            if v == '' and i < len(actions):
                 env_actions_dict[k] = actions[i]
                 i += 1
         
@@ -332,7 +332,7 @@ class OtherInteractions():
         actions = ['submit']
         i = 0
         for k, v in env_actions_dict.items():
-            if v == '':
+            if v == '' and i < len(actions):
                 env_actions_dict[k] = actions[i]
                 i += 1
                 
