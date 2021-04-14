@@ -44,20 +44,7 @@ class SingleAgentEnv():
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         self.otherinteractions = OtherInteractions(len(self.actions_dict), self.actions_dict)
         
-        # Initialize action
-        #self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer_scene.actions, self.fingerlayer_repr.actions, self.otherinteractions.actions])
-        #self.all_actions_dict_inv = dict([reversed(i) for i in self.all_actions_dict.items()])
-        #int_to_int = {}
-        #for key, value in self.all_actions_dict_inv.items():
-            #int_to_int[value] = value
-        #self.all_actions_dict_inv.update(int_to_int)
-        
-        ## Rewrite keys of individual action-spaces, so they do not overlap in the global action space
-        #self.ext_repr.actions = self.rewrite_action_keys(self.ext_repr.actions)
-        #self.fingerlayer_scene.actions = self.rewrite_action_keys(self.fingerlayer_scene.actions)
-        #self.fingerlayer_repr.actions = self.rewrite_action_keys(self.fingerlayer_repr.actions)
-
-        #self.action_dim = len(self.all_actions_list)
+        # Initialize action vector
         self.action_vec = np.zeros((len(self.actions_dict), 1))
 
         # Initialize neural network model: maps observation-->action
@@ -101,13 +88,7 @@ class SingleAgentEnv():
         self.build_state()
         
         return torch.Tensor(self.state), reward, done, 'info'
-    
-    #def select_action(self, q_values):
-        ## Interface with Flavio's pytorch-agent:
-        ## output = convlstm_model(self.state)
-        ## action = set to discrete actions of output
-        #action_space = q_values[:-num_objects]
-        
+            
     def eps_greedy_modified(self, q_values):
         action = 100 # any big number
         n_actions = 6
@@ -179,38 +160,6 @@ class SingleAgentEnv():
         
         return torch.Tensor(self.state)
 
-    def merge_actions(self, action_dicts):
-        """This function creates the actions dict for the complete environment merging the ones related to the individual environment parts.
-        """
-        self.all_actions_list = []
-        self.all_actions_dict = {}
-        _n = 0
-        for _dict in action_dicts:
-            rewritten_individual_dict = {}
-            for key,value in _dict.items():
-                if(isinstance(value, str) and value not in self.all_actions_list):
-                    self.all_actions_list.append(value)
-                    self.all_actions_dict[_n] = value
-                    rewritten_individual_dict[_n] = value
-                    _n += 1
-            _dict = rewritten_individual_dict
-        #self.all_actions_dict = sorted(self.all_actions_dict.items())
-        self.all_actions_list = [value for key, value in self.all_actions_dict.items()]
-        return self.all_actions_list, self.all_actions_dict
-
-    def rewrite_action_keys(self, _dict):
-        """Function used to rewrite keys of individual action-spaces, so they do not overlap in the global action space.
-        """
-        rewritten_dict = {}
-        for key, value in _dict.items():
-            if(isinstance(key, int)):
-                rewritten_dict[self.all_actions_dict_inv[value]] = value
-        str_to_str = {}
-        for key,value in rewritten_dict.items():
-            str_to_str[value] = value
-        rewritten_dict.update(str_to_str)
-        return rewritten_dict
-    
     def build_state(self):
         self.state = np.stack([[self.obs,
                         self.fingerlayer_scene.fingerlayer,
@@ -224,6 +173,8 @@ class SingleAgentEnv():
         return label_dist
     
     def get_reward(self, q_values):
+        
+        # reward based on labels
         label_slice = q_values[-self.max_objects:]
         label_dist = self.compare_labels(label_slice, self.obs_label)
         if label_dist == 0:
@@ -251,8 +202,6 @@ class FingerLayer():
         self.pos_y = random.randint(0, layer_dim-1)
         self.fingerlayer[self.pos_x, self.pos_y] = 1
         
-        # This dictionary translates the total action-array to the Finger-action-strings:
-        # Key will be overwritten when merged with another action-space
         actions = ['left', 'right', 'up', 'down']
         self.action_codes = set()
         
@@ -262,15 +211,6 @@ class FingerLayer():
                 env_actions_dict[k] = actions[i]
                 self.action_codes.add(k)
                 i += 1
-        
-        
-        # revd=dict([reversed(i) for i in finger_movement.items()])
-        
-        # Add each value as key as well. so in the end both integers (original keys) and strings (original values) can be input
-        #str_to_str = {}
-        #for key, value in self.actions.items():
-            #str_to_str[value] = value
-        #self.actions.update(str_to_str)
 
     def step(self, move_action, actions_dict):
         move_action_str = actions_dict[move_action]
@@ -307,14 +247,6 @@ class ExternalRepresentation():
                 env_actions_dict[k] = actions[i]
                 self.action_codes.add(k)
                 i += 1
-        
-        #self.actions = {
-            #0: 'mod_point',      # Keys will be overwritten when merged with another action-space
-        #}
-        #str_to_str = {}
-        #for key,value in self.actions.items():
-            #str_to_str[value] = value
-        #self.actions.update(str_to_str)
 
     def draw(self, draw_pixels):
         self.externalrepresentation += draw_pixels
@@ -339,15 +271,6 @@ class OtherInteractions():
                 env_actions_dict[k] = actions[i]
                 self.action_codes.add(k)
                 i += 1
-                
-        #self.actions = {
-            #0: 'submit'
-        #}
-        # Add each value as key as well. so in the end both integers (original keys) and strings (original values) can be input
-        #str_to_str = {}
-        #for key, value in self.actions.items():
-            #str_to_str[value] = value
-        #self.actions.update(str_to_str)
 
     def step(self, action, max_objects, true_label):
         if(action=='submit'):
