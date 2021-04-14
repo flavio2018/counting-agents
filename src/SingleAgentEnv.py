@@ -21,7 +21,7 @@ class SingleAgentEnv():
         model=None
         self.max_objects = agent_params['max_objects']
         self.obs_dim = agent_params['obs_dim']
-        self.actions = { n : '' for n in range(agent_params['n_actions']) } 
+        self.actions_dict = { n : '' for n in range(agent_params['n_actions']) } 
         
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
@@ -32,17 +32,17 @@ class SingleAgentEnv():
         self.obs_label[num_objects-1] = 1
         
         # Initialize external representation (the piece of paper the agent is writing on)
-        self.ext_repr = ExternalRepresentation(self.obs_dim, len(self.actions), self.actions)
+        self.ext_repr = ExternalRepresentation(self.obs_dim, len(self.actions_dict), self.actions_dict)
         
         # Initialize Finger layers: Single 1 in 0-grid of shape dim x dim
-        self.fingerlayer_scene = FingerLayer(self.obs_dim, len(self.actions), self.actions)
-        self.fingerlayer_repr = FingerLayer(self.obs_dim, len(self.actions), self.actions)
+        self.fingerlayer_scene = FingerLayer(self.obs_dim, len(self.actions_dict), self.actions_dict)
+        self.fingerlayer_repr = FingerLayer(self.obs_dim, len(self.actions_dict), self.actions_dict)
         
         # Initialize whole state space: concatenated observation and external representation
         self.build_state()
         
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
-        self.otherinteractions = OtherInteractions(len(self.actions), self.actions)
+        self.otherinteractions = OtherInteractions(len(self.actions_dict), self.actions_dict)
         
         # Initialize action
         #self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer_scene.actions, self.fingerlayer_repr.actions, self.otherinteractions.actions])
@@ -58,7 +58,7 @@ class SingleAgentEnv():
         #self.fingerlayer_repr.actions = self.rewrite_action_keys(self.fingerlayer_repr.actions)
 
         #self.action_dim = len(self.all_actions_list)
-        self.action = np.zeros((len(self.actions), 1))
+        self.action_vec = np.zeros((len(self.actions_dict), 1))
 
         # Initialize neural network model: maps observation-->action
         self.model = model
@@ -76,10 +76,10 @@ class SingleAgentEnv():
         action = self.eps_greedy_modified(q_values) #TODO: generalize
 
         if(action in self.fingerlayer_scene.actions):
-            self.fingerlayer_scene.step(action)
+            self.fingerlayer_scene.step(action, self.actions_dict)
             
         elif(action in self.fingerlayer_repr.actions):
-            self.fingerlayer_repr.step(action)
+            self.fingerlayer_repr.step(action, self.actions_dict)
 
         # For action on external representation:
         # Give as argument: either pixel-positions (1D or 2D) to draw on.
@@ -95,8 +95,8 @@ class SingleAgentEnv():
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int. When trained action-array is input.
-        self.action = np.zeros((len(self.actions), 1))
-        self.action[self.all_actions_dict_inv[action]] = 1
+        self.action_vec = np.zeros((len(self.actions_dict), 1))
+        self.action_vec[action] = 1
         
         self.build_state()
         
@@ -129,8 +129,8 @@ class SingleAgentEnv():
         self.obs_img = self.obs_img.transpose(Image.TRANSPOSE)
         self.obs_img = utils.annotate_below(self.obs_img, "Observation")
 
-        self.action_img = Image.fromarray(self.action*255).resize( (int(img_height/4),img_height), resample=0)
-        self.action_img = utils.add_grid_lines(self.action_img, np.reshape(self.action, (-1, 1)))
+        self.action_img = Image.fromarray(self.action_vec*255).resize( (int(img_height/4),img_height), resample=0)
+        self.action_img = utils.add_grid_lines(self.action_img, np.reshape(self.action_vec, (-1, 1)))
         self.action_img = utils.annotate_nodes(self.action_img, self.all_actions_list)
         self.action_img = utils.annotate_below(self.action_img, "Action")
 
@@ -272,8 +272,8 @@ class FingerLayer():
             #str_to_str[value] = value
         #self.actions.update(str_to_str)
 
-    def step(self, move_action):
-        move_action_str = self.actions[move_action]
+    def step(self, move_action, actions_dict):
+        move_action_str = actions_dict[move_action]
         if(move_action_str=="right"):
             if(self.pos_x<self.max_x):
                 self.pos_x += 1
