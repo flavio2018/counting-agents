@@ -33,17 +33,18 @@ class SingleAgentEnv():
         # Initialize external representation (the piece of paper the agent is writing on)
         self.ext_repr = ExternalRepresentation(self.obs_dim)
         
-        # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
-        self.fingerlayer = FingerLayer(self.obs_dim)
+        # Initialize Finger layers: Single 1 in 0-grid of shape dim x dim
+        self.fingerlayer_scene = FingerLayer(self.obs_dim)
+        self.fingerlayer_repr = FingerLayer(self.obs_dim)
         
         # Initialize whole state space: concatenated observation and external representation
-        self.state = np.stack([[self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation]])
+        self.build_state()
         
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         self.otherinteractions = OtherInteractions()
         
         # Initialize action
-        self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer.actions, self.otherinteractions.actions])
+        self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer_scene.actions, self.fingerlayer_repr.actions, self.otherinteractions.actions])
         self.all_actions_dict_inv = dict([reversed(i) for i in self.all_actions_dict.items()])
         int_to_int = {}
         for key, value in self.all_actions_dict_inv.items():
@@ -52,7 +53,8 @@ class SingleAgentEnv():
         
         # Rewrite keys of individual action-spaces, so they do not overlap in the global action space
         self.ext_repr.actions = self.rewrite_action_keys(self.ext_repr.actions)
-        self.fingerlayer.actions = self.rewrite_action_keys(self.fingerlayer.actions)
+        self.fingerlayer_scene.actions = self.rewrite_action_keys(self.fingerlayer_scene.actions)
+        self.fingerlayer_repr.actions = self.rewrite_action_keys(self.fingerlayer_repr.actions)
 
         self.action_dim = len(self.all_actions_list)
         self.action = np.zeros((self.action_dim, 1))
@@ -72,16 +74,19 @@ class SingleAgentEnv():
         
         action = self.eps_greedy_modified(q_values) #TODO: generalize
 
-        if(action in self.fingerlayer.actions):
-            self.fingerlayer.step(action)
+        if(action in self.fingerlayer_scene.actions):
+            self.fingerlayer_scene.step(action)
+            
+        elif(action in self.fingerlayer_repr.actions):
+            self.fingerlayer_repr.step(action)
 
         # For action on external representation:
         # Give as argument: either pixel-positions (1D or 2D) to draw on.
         #                   or draw_point/not-draw at the current finger-position
-        if(action in self.ext_repr.actions):
-            self.ext_repr.draw_point([self.fingerlayer.pos_x, self.fingerlayer.pos_y])
+        elif(action in self.ext_repr.actions):
+            self.ext_repr.draw_point([self.fingerlayer_repr.pos_x, self.fingerlayer_repr.pos_y])
 
-        if(action in self.otherinteractions.actions):
+        elif(action in self.otherinteractions.actions):
             self.otherinteractions.step(action, self.max_objects, self.obs_label)
             done = True
         
@@ -92,7 +97,7 @@ class SingleAgentEnv():
         self.action = np.zeros((self.action_dim, 1))
         self.action[self.all_actions_dict_inv[action]] = 1
         
-        self.state = np.stack([[self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation]])
+        self.build_state()
         
         return torch.Tensor(self.state), reward, done, 'info'
     
@@ -134,14 +139,22 @@ class SingleAgentEnv():
         self.ext_repr_img = self.ext_repr_img.transpose(Image.TRANSPOSE)
         self.ext_repr_img = utils.annotate_below(self.ext_repr_img, "External representation")
 
-        self.finger_img = Image.fromarray(self.fingerlayer.fingerlayer*255).resize( (img_height,img_height), resample=0)
-        self.finger_img = utils.add_grid_lines(self.finger_img, self.fingerlayer.fingerlayer)
-        self.finger_img = self.finger_img.transpose(Image.TRANSPOSE)
-        self.finger_img = utils.annotate_below(self.finger_img, "Finger layer")
-        total_img = utils.concat_imgs_h([self.obs_img, self.finger_img, self.ext_repr_img, self.action_img], dist=10).convert('RGB')
+        self.finger_scene_img = Image.fromarray(self.fingerlayer_scene.fingerlayer*255).resize( (img_height,img_height), resample=0)
+        self.finger_scene_img = utils.add_grid_lines(self.finger_scene_img, self.fingerlayer_scene.fingerlayer)
+        self.finger_scene_img = self.finger_scene_img.transpose(Image.TRANSPOSE)
+        self.finger_scene_img = utils.annotate_below(self.finger_scene_img, "Finger layer")
+        
+        self.finger_repr_img = Image.fromarray(self.fingerlayer_repr.fingerlayer*255).resize( (img_height,img_height), resample=0)
+        self.finger_repr_img = utils.add_grid_lines(self.finger_repr_img, self.fingerlayer_repr.fingerlayer)
+        self.finger_repr_img = self.finger_repr_img.transpose(Image.TRANSPOSE)
+        self.finger_repr_img = utils.annotate_below(self.finger_repr_img, "Finger layer")
+        
+        total_img = utils.concat_imgs_h([self.obs_img, self.finger_repr_img, self.finger_repr_img, self.ext_repr_img, self.action_img], dist=10).convert('RGB')
+        
         if(display_id is not None):
             display(total_img, display_id=display_id)
             time.sleep(self.fps_inv)
+        
         return total_img
 
     def reset(self):
@@ -151,16 +164,17 @@ class SingleAgentEnv():
         # associated label
         num_objects = self.obs.sum(dtype=int)
         self.obs_label = np.zeros(self.max_objects)
-        self.obs_label[num_objects-1] = 1
+        self.obs_label[num_objects-1] = 1 # vector form
         
         # reset external representation
         self.ext_repr = ExternalRepresentation(self.obs_dim)
         
-        # reset finger layer
-        self.fingerlayer = FingerLayer(self.obs_dim)
+        # reset finger layers
+        self.fingerlayer_scene = FingerLayer(self.obs_dim)
+        self.fingerlayer_repr = FingerLayer(self.obs_dim)
         
         # reset whole state
-        self.state = np.stack([[self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation]])
+        self.build_state()
         
         return torch.Tensor(self.state)
 
@@ -196,6 +210,11 @@ class SingleAgentEnv():
         rewritten_dict.update(str_to_str)
         return rewritten_dict
     
+    def build_state(self):
+        self.state = np.stack([[self.obs,
+                        self.fingerlayer_scene.fingerlayer,
+                        self.fingerlayer_repr.fingerlayer, self.ext_repr.externalrepresentation]])
+    
     def compare_labels(self, agent_label, true_label):
         """Encode here the label comparison dynamics.
         """
@@ -217,6 +236,7 @@ class SingleAgentEnv():
         
         return reward
         
+
 class FingerLayer():
     """
     This class implements the finger movement part of the environment.
@@ -303,8 +323,6 @@ class OtherInteractions():
         if(action=='submit'):
             pass
             # TODO: what happens here?
-
-
 
 
 if __name__ == '__main__':
