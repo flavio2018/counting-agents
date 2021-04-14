@@ -131,7 +131,7 @@ class SingleAgentEnv():
 
         self.action_img = Image.fromarray(self.action_vec*255).resize( (int(img_height/4),img_height), resample=0)
         self.action_img = utils.add_grid_lines(self.action_img, np.reshape(self.action_vec, (-1, 1)))
-        self.action_img = utils.annotate_nodes(self.action_img, self.actions_dict.values())
+        self.action_img = utils.annotate_nodes(self.action_img, list(self.actions_dict.values()))
         self.action_img = utils.annotate_below(self.action_img, "Action")
 
 
