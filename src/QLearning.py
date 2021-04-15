@@ -147,10 +147,12 @@ def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, ga
 
     # Compute loss
     loss_val = loss_fn(state_action_values, expected_state_action_values.unsqueeze(1))
-
+    
     # Optimize the model
     optimizer.zero_grad()
     loss_val.backward()
     for param in policy_net.parameters():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
+    
+    return loss_val
