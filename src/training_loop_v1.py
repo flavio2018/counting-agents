@@ -50,7 +50,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             # Perform one step of the optimization (on the target network)
             loss_val = optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, n_iter, log)
             
-            log.add_scalar('Loss/train', loss_val.item(), n_iter)
+            
         
         # Update the target network every target_update episodes
         if episode % target_update == 0:
