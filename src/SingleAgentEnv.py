@@ -149,11 +149,11 @@ class SingleAgentEnv():
         self.obs_label[num_objects-1] = 1 # vector form
         
         # reset external representation
-        self.ext_repr = ExternalRepresentation(self.obs_dim)
+        self.ext_repr = ExternalRepresentation(self.obs_dim, len(self.actions_dict), self.actions_dict)
         
-        # reset finger layers
-        self.fingerlayer_scene = FingerLayer(self.obs_dim)
-        self.fingerlayer_repr = FingerLayer(self.obs_dim)
+        # Initialize Finger layers: Single 1 in 0-grid of shape dim x dim
+        self.fingerlayer_scene = FingerLayer(self.obs_dim, len(self.actions_dict), self.actions_dict)
+        self.fingerlayer_repr = FingerLayer(self.obs_dim, len(self.actions_dict), self.actions_dict)
         
         # reset whole state
         self.build_state()
