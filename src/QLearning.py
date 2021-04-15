@@ -95,7 +95,7 @@ def eps_greedy_modified(state, policy_net, eps):
     
     return action
 
-def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, gamma=0.999, batch_size=100):
+def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, n_iter, log, gamma=0.999, batch_size=100):
     """
     Args:
         - replay_memory: The Replay Memory used to make observations uncorrelated.
@@ -150,6 +150,7 @@ def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, ga
     
     print('hello!')
     print(loss_val.item(), state_action_values, expected_state_expected_state_action_values)
+    log.add_scalar('Loss/train', loss_val.item(), n_iter)
     
     # Optimize the model
     optimizer.zero_grad()
