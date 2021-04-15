@@ -3,7 +3,7 @@ This file contains the training loop for the agents involved in the communicatio
 """
 from QLearning import optimize_model, get_qvalues
 
-def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, eps=None, tau=None, target_update=10):
+def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, target_update=10):
     """
     Args:
         - env: The Gym-like environment.
@@ -14,6 +14,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
         - policy: Policy used to choose the action based on Q-values (either softmax or eps-greedy).
         - loss_fn: The loss function chosen.
         - optimizer: PyTorch implementation of the chosen optimization algorithm
+        - log: A TensorBoard SummaryWriter object
         - eps: The epsilon parameter for the eps-greedy policy.
         - tau: The temperature parameter for the softmax policy.
         - target_update: Number of episodes to wait before updating the target network
