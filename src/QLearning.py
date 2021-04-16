@@ -117,8 +117,6 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # to Transition of batch-arrays.
     batch = Transition(*zip(*transitions))
     
-    print(batch) # debug
-    
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
