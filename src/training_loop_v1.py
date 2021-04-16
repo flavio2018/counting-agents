@@ -50,11 +50,10 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             # Perform one step of the optimization (on the target network)
             loss_val = optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, n_iter, log)
             
-            
         
         # Update the target network every target_update episodes
         if episode % target_update == 0:
-            print('Updating target network...')
+            print('E {episode} | Updating target network...')
             # Copy the weights of the policy network to the target network
             target_net.load_state_dict(policy_net.state_dict())
     
