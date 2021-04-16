@@ -23,7 +23,6 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
     if eps == tau == None:
         return
     
-    done = False
     policy_param = tau if tau != None else eps
     
     n_iter = 0
@@ -31,7 +30,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
     for episode in range(n_episodes):
         # Initialize the environment and state
         state = env.reset()
-        
+        done = False
+    
         while not done:
             n_iter += 1
             
