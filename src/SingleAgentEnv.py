@@ -61,7 +61,7 @@ class SingleAgentEnv():
         reward = 0 # TODO: reward when finger on object
         
         action = self.eps_greedy_modified(q_values) #TODO: generalize
-
+        
         if(action in self.fingerlayer_scene.action_codes):
             self.fingerlayer_scene.step(action, self.actions_dict)
             
@@ -91,7 +91,7 @@ class SingleAgentEnv():
             
     def eps_greedy_modified(self, q_values):
         action = 100 # any big number
-        n_actions = 6
+        n_actions = len(self.actions_dict)
         eps = .1 # TODO: not-hardcoded
         
         while action > n_actions:
