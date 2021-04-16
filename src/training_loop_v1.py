@@ -53,7 +53,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
         
         # Update the target network every target_update episodes
         if episode % target_update == 0:
-            print('E {episode} | Updating target network...')
+            print(f'E {episode} | Updating target network...')
             # Copy the weights of the policy network to the target network
             target_net.load_state_dict(policy_net.state_dict())
     
