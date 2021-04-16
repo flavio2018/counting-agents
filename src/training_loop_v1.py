@@ -3,7 +3,7 @@ This file contains the training loop for the agents involved in the communicatio
 """
 from QLearning import optimize_model, get_qvalues
 
-def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, target_update=10):
+def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, target_update=10, batch_size=128):
     """
     Args:
         - env: The Gym-like environment.
@@ -18,6 +18,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
         - eps: The epsilon parameter for the eps-greedy policy.
         - tau: The temperature parameter for the softmax policy.
         - target_update: Number of episodes to wait before updating the target network
+        - batch_size: Size of the batch sampled from the Replay Memory
     """
     if eps == tau == None:
         return
@@ -48,7 +49,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             state = next_state
 
             # Perform one step of the optimization (on the target network)
-            loss_val = optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, n_iter, log)
+            loss_val = optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, n_iter, log)
             
         
         # Update the target network every target_update episodes

@@ -95,16 +95,16 @@ def eps_greedy_modified(state, policy_net, eps):
     
     return action
 
-def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, n_iter, log, gamma=0.999, batch_size=100):
+def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, n_iter, log, gamma=0.999):
     """
     Args:
         - replay_memory: The Replay Memory used to make observations uncorrelated.
+        - batch_size: Size of the batch sampled from the Replay Memory
         - policy_net: The Policy Network
         - target_net: The Target Network
         - loss_fn: The loss function chosen.
         - optimizer: PyTorch implementation of the chosen optimization algorithm
         - gamma: Gamma parameter in the Q-Learning algorithm
-        - batch_size: Size of the batch sampled from the Replay Memory
     """
     # skip optimization when there is not a sufficient number of samples 
     # in the replay memory
@@ -116,7 +116,9 @@ def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, n_
     # detailed explanation). This converts batch-array of Transitions
     # to Transition of batch-arrays.
     batch = Transition(*zip(*transitions))
-
+    
+    print(batch) # debug
+    
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
