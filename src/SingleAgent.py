@@ -24,12 +24,8 @@ class SingleRLAgent():
         
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
-<<<<<<< HEAD
         self.obs.ravel()[np.random.choice(self.obs.size, self.n_objects, replace=False)] = 1
-=======
-        self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
-        
->>>>>>> b7e5e0730cc6da634e15c7d1ab494b8635aed28f
+
         # Initialize external representation (the piece of paper the agent is writing on)
         self.ext_repr = ExternalRepresentation(self.obs_dim)
         
