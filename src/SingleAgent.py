@@ -19,12 +19,13 @@ class SingleRLAgent():
     def __init__(self, agent_params):
         model=None
         self.max_objects = agent_params['max_objects']
+        self.n_objects = random.randint(1, self.max_objects)
         self.obs_dim = agent_params['obs_dim']
         
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
-        self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
-        
+        self.obs.ravel()[np.random.choice(self.obs.size, self.n_objects, replace=False)] = 1
+
         # Initialize external representation (the piece of paper the agent is writing on)
         self.ext_repr = ExternalRepresentation(self.obs_dim)
         
@@ -72,7 +73,13 @@ class SingleRLAgent():
             self.ext_repr.draw_point([self.fingerlayer.pos_x, self.fingerlayer.pos_y])
 
         if(action in self.otherinteractions.actions):
-            self.otherinteractions.step(action)
+            if (action == 'submit'):
+                self.is_submitted_ext_repr = True
+                self.submitted_ext_repr = self.ext_repr.externalrepresentation
+            elif (action == 'larger'):
+                pass
+            elif (action == 'smaller'):
+                pass
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int. When trained action-array is input.
@@ -80,11 +87,18 @@ class SingleRLAgent():
         self.action[self.all_actions_dict_inv[action]] = 1
 
 
-    def select_action(self):
+    def select_action(self, state):
         # Interface with Flavio's pytorch-agent:
         # output = convlstm_model(self.state)
         # action = set to discrete actions of output
-        pass
+        eps = IsTest or self.eps
+
+        # model_output = self.model(state)
+        if random.random() <= ep:
+            action_index = random.randrange(Actions)
+        else:
+            action = torch.argmax(self.critic.q_t_values(observation), dim=1).cpu().numpy()
+        return action
 
     def render(self, display_id=None):
         img_height=200
@@ -236,14 +250,6 @@ class OtherInteractions():
             str_to_str[value] = value
         self.actions.update(str_to_str)
 
-    def step(self, action):
-        if(action=='submit'):
-            self.is_submitted_ext_repr = True
-            self.submitted_ext_repr = self.ext_repr.externalrepresentation # TODO: this won't work
-        elif(action=='larger'):
-            pass
-        elif(action=='smaller'):
-            pass
 
 
 
