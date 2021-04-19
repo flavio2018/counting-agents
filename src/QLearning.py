@@ -10,6 +10,8 @@ References:
 import random
 import torch
 from torch import nn
+from collections import namedtuple
+import numpy as np
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -68,27 +70,53 @@ def eps_greedy_action_selection(state, policy_net, eps):
         return torch.tensor([[random.randrange(n_actions)]], dtype=torch.long)
     #, device=device) # TODO GPU
 
-def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, gamma=0.999, batch_size=100):
+def get_qvalues(state, policy_net):
+    with torch.no_grad():
+        policy_net.eval()
+        q_values = policy_net(state) # we start from 0
+    
+    return q_values
+
+def eps_greedy_modified(state, policy_net, eps):
+    action = 100 # any big number
+    n_actions = 6
+    
+    while action > n_actions:
+        sample = random.random()
+        if sample > eps:
+            with torch.no_grad():
+                policy_net.eval()
+                # t.max(1) will return largest column value of each row.
+                # second column on max result is index of where max element was
+                # found, so we pick action with the larger expected reward.
+                action = policy_net(state).max(0)[1].item() - 1 # we start from 0
+        else:
+            action = random.randrange(n_actions)
+    
+    return action
+
+def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, n_iter, log, gamma=0.999):
     """
     Args:
         - replay_memory: The Replay Memory used to make observations uncorrelated.
+        - batch_size: Size of the batch sampled from the Replay Memory
         - policy_net: The Policy Network
         - target_net: The Target Network
         - loss_fn: The loss function chosen.
         - optimizer: PyTorch implementation of the chosen optimization algorithm
         - gamma: Gamma parameter in the Q-Learning algorithm
-        - batch_size: Size of the batch sampled from the Replay Memory
     """
     # skip optimization when there is not a sufficient number of samples 
     # in the replay memory
     if len(replay_memory) < batch_size:
+        print(f"Replay memory size ({len(replay_memory)}) is less than batch size ({batch_size})")
         return
     transitions = replay_memory.sample(batch_size)
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
     # to Transition of batch-arrays.
     batch = Transition(*zip(*transitions))
-
+    
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
@@ -97,8 +125,8 @@ def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, ga
     # (a final state would've been the one after which simulation ended)
     # (all the elements where the next state is not None)
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                          batch.next_state), dtype=torch.bool))
-                                        # device=device # TODO GPU
+                                          batch.next_state)), dtype=torch.bool)
+                                        #, device=device) # TODO GPU
     non_final_next_states = torch.cat([s for s in batch.next_state
                                                 if s is not None])
     
@@ -120,10 +148,16 @@ def optimize_model(replay_memory, policy_net, target_net, loss_fn, optimizer, ga
 
     # Compute loss
     loss_val = loss_fn(state_action_values, expected_state_action_values.unsqueeze(1))
-
+    
+    print('hello!')
+    print(loss_val.item(), state_action_values, expected_state_expected_state_action_values)
+    log.add_scalar('Loss/train', loss_val.item(), n_iter)
+    
     # Optimize the model
     optimizer.zero_grad()
     loss_val.backward()
     for param in policy_net.parameters():
         param.grad.data.clamp_(-1, 1)
     optimizer.step()
+    
+    return loss_val

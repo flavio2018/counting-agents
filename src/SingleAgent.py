@@ -1,3 +1,6 @@
+"""
+This file contains the implementation of the environment from the point of view of a single agent. The environment class SingleRLAgent embeds three subclasses (FingerLayer, ExternalRepresentation, OtherInteractions) which implement the dynamics of the different environment parts.
+"""
 import time
 from PIL import Image, ImageDraw
 from IPython.display import display, update_display
@@ -5,27 +8,40 @@ import numpy as np
 import utils
 import random
 
-# later in utils
+# TODO (?): later in utils
 from PIL import ImageFont
 #from fonts.ttf import AmaticSC
 
 class SingleRLAgent():
+    """
+    This class implements the environment as a whole.
+    """
     def __init__(self, agent_params):
         model=None
         self.max_objects = agent_params['max_objects']
         self.n_objects = random.randint(1, self.max_objects)
         self.obs_dim = agent_params['obs_dim']
+        
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
+<<<<<<< HEAD
         self.obs.ravel()[np.random.choice(self.obs.size, self.n_objects, replace=False)] = 1
+=======
+        self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
+        
+>>>>>>> b7e5e0730cc6da634e15c7d1ab494b8635aed28f
         # Initialize external representation (the piece of paper the agent is writing on)
         self.ext_repr = ExternalRepresentation(self.obs_dim)
+        
         # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
         self.fingerlayer = FingerLayer(self.obs_dim)
+        
         # Initialize whole state space: concatenated observation and external representation
         self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
+        
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         self.otherinteractions = OtherInteractions()
+        
         # Initialize action
         self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer.actions, self.otherinteractions.actions])
         self.all_actions_dict_inv = dict([reversed(i) for i in self.all_actions_dict.items()])
@@ -33,6 +49,7 @@ class SingleRLAgent():
         for key, value in self.all_actions_dict_inv.items():
             int_to_int[value] = value
         self.all_actions_dict_inv.update(int_to_int)
+        
         # Rewrite keys of individual action-spaces, so they do not overlap in the global action space
         self.ext_repr.actions = self.rewrite_action_keys(self.ext_repr.actions)
         self.fingerlayer.actions = self.rewrite_action_keys(self.fingerlayer.actions)
@@ -122,6 +139,8 @@ class SingleRLAgent():
         self.fingerlayer = FingerLayer(self.obs_dim)
 
     def merge_actions(self, action_dicts):
+        """This function creates the actions dict for the complete environment merging the ones related to the individual environment parts.
+        """
         self.all_actions_list = []
         self.all_actions_dict = {}
         _n = 0
@@ -139,6 +158,8 @@ class SingleRLAgent():
         return self.all_actions_list, self.all_actions_dict
 
     def rewrite_action_keys(self, _dict):
+        """Function used to rewrite keys of individual action-spaces, so they do not overlap in the global action space.
+        """
         rewritten_dict = {}
         for key, value in _dict.items():
             if(isinstance(key, int)):
@@ -150,6 +171,9 @@ class SingleRLAgent():
         return rewritten_dict
 
 class FingerLayer():
+    """
+    This class implements the finger movement part of the environment.
+    """
     def __init__(self, dim):
         self.dim = dim
         self.fingerlayer = np.zeros((dim, dim))
@@ -192,6 +216,9 @@ class FingerLayer():
 
 
 class ExternalRepresentation():
+    """
+    This class implements the external representation in the environment.
+    """
     def __init__(self, dim):
         self.dim = dim
         self.externalrepresentation = np.zeros((dim, dim))
@@ -212,6 +239,9 @@ class ExternalRepresentation():
 
 
 class OtherInteractions():
+    """
+    This class implements the environmental responses to actions related to communication with the other agent ('submit') or to the communication of the final answer ('larger', 'smaller').
+    """
     def __init__(self):
         self.actions = {
             0: 'submit',  # Keys will be overwritten when merged with another action-space
@@ -229,14 +259,14 @@ class OtherInteractions():
 
 
 
+if __name__ == '__main__':
+    agent_params = {
+        'max_objects': 9,
+        'obs_dim': 4,
+    }
 
-agent_params = {
-    'max_objects': 9,
-    'obs_dim': 4,
-}
 
-
-agent = SingleRLAgent(agent_params)
-agent.render()
-action = 'mod_point'
-agent.step(action)
+    agent = SingleRLAgent(agent_params)
+    agent.render()
+    action = 'mod_point'
+    agent.step(action)

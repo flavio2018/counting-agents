@@ -59,7 +59,7 @@ class ConvLSTMCell(nn.Module):
         }
 
         self.state_shape = (
-            1,
+            1, # no batches
             self.n_kernels,
             self.input_dim,
             self.input_dim
@@ -94,24 +94,23 @@ class ConvLSTMCell(nn.Module):
         # Dropouts
         self.H_drop = nn.Dropout2d(p=self.dropout)
         self.C_drop = nn.Dropout2d(p=self.dropout)
-
+        
+        self.b_i = torch.zeros(self.state_shape, requires_grad=True)
+        self.b_f = torch.zeros(self.state_shape, requires_grad=True)
+        self.b_c = torch.zeros(self.state_shape, requires_grad=True)
+        self.b_o = torch.zeros(self.state_shape, requires_grad=True)
+        
         self.apply(initialize_weights)
     
     def forward(self, x):
-        # TODO update?
-        b_i = torch.zeros(self.state_shape, requires_grad=True)
-        b_f = torch.zeros(self.state_shape, requires_grad=True)
-        b_c = torch.zeros(self.state_shape, requires_grad=True)
-        b_o = torch.zeros(self.state_shape, requires_grad=True)
-        
         sigmoid = nn.Sigmoid()
         tanh = nn.Tanh()
         
-        i_t = sigmoid(self.W_xi(x) + self.W_hi(self.H) + self.W_ci(self.C) + b_i)
-        f_t = sigmoid(self.W_xf(x) + self.W_hf(self.H) + self.W_cf(self.C) + b_f)
-        C_t = f_t * self.C + i_t * tanh(self.W_xc(x) + self.W_hc(self.H) + b_c)
+        i_t = sigmoid(self.W_xi(x) + self.W_hi(self.H) + self.W_ci(self.C) + self.b_i)
+        f_t = sigmoid(self.W_xf(x) + self.W_hf(self.H) + self.W_cf(self.C) + self.b_f)
+        C_t = f_t * self.C + i_t * tanh(self.W_xc(x) + self.W_hc(self.H) + self.b_c)
         C_t = self.C_drop(C_t)
-        o_t = sigmoid(self.W_xo(x) + self.W_ho(self.H) + self.W_co(self.C) + b_o)
+        o_t = sigmoid(self.W_xo(x) + self.W_ho(self.H) + self.W_co(self.C) + self.b_o)
         H_t = o_t * tanh(C_t)
         H_t = self.H_drop(H_t)
         
