@@ -8,12 +8,12 @@ class MultiAgentEnvironment():
     e.g. env.action=[agent_1_action, agent_2_action],
          env.state=[agent_1_state, agent_2_state],
     '''
-    def __init__(self):
-        agent_1 = SingleRLAgent()
-        agent_2 = SingleRLAgent()
+    def __init__(self, params):
+        agent_1 = SingleRLAgent(params)
+        agent_2 = SingleRLAgent(params)
         self.agents = [agent_1, agent_2]
         self.n_agents = len(self.agents)
-        self.states = [agent.state for agent in agents]
+        self.states = [agent.state for agent in self.agents]
         self.actions = None
         self.time_to_give_an_answer = False
         self.done = False
@@ -49,9 +49,13 @@ class MultiAgentEnvironment():
 
         return next_states_list, reward, self.done
 
+    def select_action(self):
+        pass
+
+
     def reset(self):
         self.n_agents = len(self.agents)
-        self.states = [agent.state for agent in agents]
+        self.states = [agent.state for agent in self.agents]
         self.actions = None
         self.time_to_give_an_answer = False
         self.done = False
