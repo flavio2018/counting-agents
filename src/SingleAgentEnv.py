@@ -94,7 +94,7 @@ class SingleAgentEnv():
         n_actions = len(self.actions_dict)
         eps = .1 # TODO: not-hardcoded
         
-        while action > n_actions:
+        while action >= n_actions:
             sample = random.random()
             if sample > eps:
                 action = q_values.max(0)[1].item() - 1 # we start from 0
