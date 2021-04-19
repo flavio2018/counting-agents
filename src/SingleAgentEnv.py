@@ -97,7 +97,8 @@ class SingleAgentEnv():
         while action >= n_actions:
             sample = random.random()
             if sample > eps:
-                action = q_values.max(0)[1].item() - 1 # we start from 0
+                action = q_values.max(1)[1].item() - 1 
+                # max(1) is for batch, [1] is for index, .item() is for scalar, -1 since we start from 0
             else:
                 action = random.randrange(n_actions)
         
