@@ -40,6 +40,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             q_values = get_qvalues(state, policy_net)
             next_state, reward, done, info = env.step(q_values)
             
+            reward = torch.tensor([reward]) #, device=device) TODO CUDA
+            
             if done: next_state = None
                 
             # Store the transition in memory
