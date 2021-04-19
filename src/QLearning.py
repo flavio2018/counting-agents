@@ -125,8 +125,8 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # (a final state would've been the one after which simulation ended)
     # (all the elements where the next state is not None)
     non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                          batch.next_state), dtype=torch.bool))
-                                        # device=device # TODO GPU
+                                          batch.next_state)), dtype=torch.bool)
+                                        #, device=device) # TODO GPU
     non_final_next_states = torch.cat([s for s in batch.next_state
                                                 if s is not None])
     
