@@ -122,7 +122,7 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
     
-    action_indices = action_batch.max(1)[1].reshape(128,1) # to comply with gather operation later
+    action_indices = action_batch.max(1)[1].clone().view(batch_size,1) # to comply with gather operation later
     
     # Compute a mask of non-final states and concatenate the batch elements
     # (a final state would've been the one after which simulation ended)
