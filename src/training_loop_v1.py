@@ -35,6 +35,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
     
         while not done:
             n_iter += 1
+            print(n_iter)
             
             # Choose the action following the policy
             #action = policy(state, policy_net, policy_param)
