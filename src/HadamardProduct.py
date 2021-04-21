@@ -20,4 +20,4 @@ class HadamardProduct(nn.Module):
         self.bias = nn.Parameter(torch.empty(*shape))
            
     def forward(self, x):
-        return x * self.weights
+        return x * self.weights + self.bias
