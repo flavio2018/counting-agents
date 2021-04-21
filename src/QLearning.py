@@ -111,6 +111,7 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     if len(replay_memory) < batch_size:
         print(f"Replay memory size ({len(replay_memory)}) is less than batch size ({batch_size})")
         return
+    
     transitions = replay_memory.sample(batch_size)
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
@@ -120,6 +121,8 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
+    
+    action_indices = action_batch.max(1)[1].reshape(128,1) # to comply with gather operation later
     
     # Compute a mask of non-final states and concatenate the batch elements
     # (a final state would've been the one after which simulation ended)
@@ -134,7 +137,7 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # columns of actions taken. These are the actions which would've been taken
     # for each batch state according to policy_net
     policy_net.train()
-    state_action_values = policy_net(state_batch).gather(1, action_batch)
+    state_action_values = policy_net(state_batch).gather(1, action_indices)
 
     # Compute V(s_{t+1}) for all next states.
     # Expected values of actions for non_final_next_states are computed based
