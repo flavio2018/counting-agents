@@ -152,8 +152,8 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # Compute loss
     loss_val = loss_fn(state_action_values, expected_state_action_values.unsqueeze(1))
     
-    print('hello!')
-    print(loss_val.item(), state_action_values, expected_state_expected_state_action_values)
+    #print('hello!')
+    #print(loss_val.item(), state_action_values, expected_state_action_values)
     log.add_scalar('Loss/train', loss_val.item(), n_iter)
     
     # Optimize the model
