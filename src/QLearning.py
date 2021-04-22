@@ -73,7 +73,7 @@ def eps_greedy_action_selection(state, policy_net, eps):
 def get_qvalues(state, policy_net):
     with torch.no_grad():
         policy_net.eval()
-        q_values = policy_net(state) # we start from 0
+        q_values = policy_net(state)
     
     return q_values
 
@@ -95,7 +95,7 @@ def eps_greedy_modified(state, policy_net, eps):
     
     return action
 
-def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, n_iter, log, gamma=0.999):
+def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, gamma=0.999):
     """
     Args:
         - replay_memory: The Replay Memory used to make observations uncorrelated.
@@ -145,17 +145,13 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # This is merged based on the mask, such that we'll have either the expected
     # state value or 0 in case the state was final.
     next_state_values = torch.zeros(batch_size) #, device=device) # TODO GPU
-    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
+    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach() # we don't want to compute the gradient's loss wrt the target net
     # Compute the expected Q values
     expected_state_action_values = (next_state_values * gamma) + reward_batch
 
     # Compute loss
     loss_val = loss_fn(state_action_values, expected_state_action_values.unsqueeze(1))
-    
-    #print('hello!')
-    #print(loss_val.item(), state_action_values, expected_state_action_values)
-    log.add_scalar('Loss/train', loss_val.item(), n_iter)
-    
+        
     # Optimize the model
     optimizer.zero_grad()
     loss_val.backward()

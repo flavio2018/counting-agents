@@ -26,16 +26,15 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
     
     policy_param = tau if tau != None else eps
     
-    n_iter = 0
     
     for episode in range(n_episodes):
         # Initialize the environment and state
         state = env.reset()
         done = False
+        n_iter = 0
     
         while not done:
             n_iter += 1
-            print(n_iter)
             
             # Choose the action following the policy
             #action = policy(state, policy_net, policy_param)
@@ -52,9 +51,10 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             # Move to the next state
             state = next_state
 
-            # Perform one step of the optimization (on the target network)
-            loss_val = optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, n_iter, log)
+            # Perform one step of the optimization (on the policy network)
+            loss_val = optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer)
             
+            log.add_scalar('Loss/train', loss_val.item(), n_iter)
         
         # Update the target network every target_update episodes
         if episode % target_update == 0:
