@@ -114,7 +114,8 @@ class ConvLSTMCell(nn.Module):
         H_t = o_t * tanh(C_t)
         H_t = self.H_drop(H_t)
         
-        self.C = C_t
-        self.H = H_t
+        if H_t.shape[0] == 1: # if not in batch mode
+            self.C = C_t
+            self.H = H_t
         
         return H_t, C_t
