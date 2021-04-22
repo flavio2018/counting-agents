@@ -110,7 +110,7 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # in the replay memory
     if len(replay_memory) < batch_size:
         print(f"Replay memory size ({len(replay_memory)}) is less than batch size ({batch_size})")
-        return
+        return None
     
     transitions = replay_memory.sample(batch_size)
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
