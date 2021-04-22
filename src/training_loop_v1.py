@@ -26,12 +26,12 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
     
     policy_param = tau if tau != None else eps
     
+    n_iter = 0
     
     for episode in range(n_episodes):
         # Initialize the environment and state
         state = env.reset()
         done = False
-        n_iter = 0
     
         while not done:
             n_iter += 1
@@ -40,6 +40,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             #action = policy(state, policy_net, policy_param)
             q_values = get_qvalues(state, policy_net)
             next_state, reward, done, info = env.step(q_values)
+            
+            log.add_scalar('Reward', reward, n_iter)
             
             reward = torch.tensor([reward]) #, device=device) TODO CUDA
             
