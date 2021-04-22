@@ -44,7 +44,7 @@ class CountingAgent(nn.Module):
         # From flattened-2D to visual representation
         # From visual representation to action space
         self.Vis2Act = nn.Sequential(
-            torch.nn.Flatten(start_dim=1), # flattens all dimensions (assumes no batches)
+            torch.nn.Flatten(start_dim=1), # flattens all dimensions (keeps batches)
             nn.Linear(
                 in_features=size_flattened_rep,
                 out_features=self.vis_rep_size
@@ -59,9 +59,9 @@ class CountingAgent(nn.Module):
         self.apply(initialize_weights)
         
     def forward(self, x):
-        
+        print(x.shape)
         x, C = self.ConvLSTMCell(x)
-        
+        print(x.shape)
         x = self.Vis2Act(x)
-        
+        print(x.shape)
         return x
