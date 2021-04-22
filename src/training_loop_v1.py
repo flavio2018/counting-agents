@@ -4,7 +4,7 @@ This file contains the training loop for the agents involved in the communicatio
 from QLearning import optimize_model, get_qvalues
 import torch
 
-def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, target_update=10, batch_size=128):
+def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, gamma=0.999, target_update=10, batch_size=128):
     """
     Args:
         - env: The Gym-like environment.
@@ -17,7 +17,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
         - optimizer: PyTorch implementation of the chosen optimization algorithm
         - log: A TensorBoard SummaryWriter object
         - eps: The epsilon parameter for the eps-greedy policy.
-        - tau: The temperature parameter for the softmax policy.
+        - tau: The temperature parameter for the softmax policy.        
+        - gamma: Gamma parameter in the Q-Learning algorithm for long-term reward
         - target_update: Number of episodes to wait before updating the target network
         - batch_size: Size of the batch sampled from the Replay Memory
     """
@@ -54,7 +55,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             state = next_state
 
             # Perform one step of the optimization (on the policy network)
-            loss_val = optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer)
+            loss_val = optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, gamma)
             
             if loss_val != None:
                 log.add_scalar('Loss/train', loss_val.item(), n_iter)
