@@ -175,8 +175,8 @@ class SingleAgentEnv():
     
     def get_reward(self, q_values):
         
-        # reward based on labels; [0] because of tensor qvalues
-        label_slice = q_values[0][-self.max_objects:]
+        # reward based on labels; [0] because of tensor qvalues 
+        label_slice = q_values.detach().numpy()[0][-self.max_objects:]
         label_dist = self.compare_labels(label_slice, self.obs_label)
         
         if label_dist == 0:
