@@ -181,9 +181,9 @@ class SingleAgentEnv():
         
         if label_dist == 0:
             reward = 1
-        if label_dist < 2:
+        elif label_dist < 2:
             reward = .5
-        if label_dist < 3:
+        elif label_dist < 3:
             reward = .2
         else:
             reward = 0
