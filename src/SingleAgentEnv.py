@@ -178,6 +178,7 @@ class SingleAgentEnv():
         # reward based on labels
         label_slice = q_values[-self.max_objects:]
         label_dist = self.compare_labels(label_slice, self.obs_label)
+        
         if label_dist == 0:
             reward = 1
         if label_dist < 2:
@@ -188,11 +189,11 @@ class SingleAgentEnv():
             reward = 0
             
         # reward based on scene finger position
-        finger_index = self.fingerlayer_scene.fingerlayer.argmax()
-        finger_position = np.unravel_index(finger_index, self.fingerlayer_scene.fingerlayer.shape)
+        #finger_index = self.fingerlayer_scene.fingerlayer.argmax()
+        #finger_position = np.unravel_index(finger_index, self.fingerlayer_scene.fingerlayer.shape)
         
-        if self.obs[finger_position] == 1:
-            reward += 0.1 # TODO: diminishing reward?
+        #if self.obs[finger_position] == 1:
+            #reward += 0.1 # TODO: diminishing reward?
             
         # TODO: reward showing how to create repr. for small quantities 
         
