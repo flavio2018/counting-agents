@@ -30,7 +30,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
     
     n_iter = 0
     init_time = time.gmtime(time.time())
-    run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mmon)+str(init_time.tm_hour)+str(init_time.tm_mmin)
+    run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mon)+str(init_time.tm_hour)+str(init_time.tm_min)
     
     for episode in range(n_episodes):
         # Initialize the environment and state
