@@ -3,7 +3,7 @@ This file contains the training loop for the agents involved in the communicatio
 """
 from QLearning import optimize_model, get_qvalues
 import torch
-from time import time
+import time
 
 def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, gamma=0.999, target_update=10, batch_size=128):
     """
@@ -29,7 +29,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
     policy_param = tau if tau != None else eps
     
     n_iter = 0
-    init_time = int(time())
+    init_time = time.gmtime(time.time())
+    run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mmon)+str(init_time.tm_hour)+str(init_time.tm_mmin)
     
     for episode in range(n_episodes):
         # Initialize the environment and state
@@ -44,7 +45,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             q_values = get_qvalues(state, policy_net)
             next_state, reward, done, info = env.step(q_values)
             
-            log.add_scalar(f'Reward_{init_time}', reward, n_iter)
+            log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
             
             reward = torch.tensor([reward]) #, device=device) TODO CUDA
             
@@ -60,7 +61,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             loss_val = optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, gamma)
             
             if loss_val != None:
-                log.add_scalar(f'Loss/train_{init_time}', loss_val.item(), n_iter)
+                log.add_scalar(f'Loss/train_{run_timestamp}', loss_val.item(), n_iter)
         
         # Update the target network every target_update episodes
         if episode % target_update == 0:
