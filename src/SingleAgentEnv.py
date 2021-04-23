@@ -175,8 +175,8 @@ class SingleAgentEnv():
     
     def get_reward(self, q_values):
         
-        # reward based on labels
-        label_slice = q_values[-self.max_objects:]
+        # reward based on labels; [0] because of tensor qvalues
+        label_slice = q_values[0][-self.max_objects:]
         label_dist = self.compare_labels(label_slice, self.obs_label)
         
         if label_dist == 0:
@@ -195,7 +195,9 @@ class SingleAgentEnv():
         #if self.obs[finger_position] == 1:
             #reward += 0.1 # TODO: diminishing reward?
             
-        # TODO: reward showing how to create repr. for small quantities 
+        # TODO: reward diminishing with time
+
+        # TODO: reward showing how to create repr. for small quantities         
         
         return reward
         
