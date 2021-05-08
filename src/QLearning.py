@@ -109,7 +109,7 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # skip optimization when there is not a sufficient number of samples 
     # in the replay memory
     if len(replay_memory) < batch_size:
-        print(f"Replay memory size ({len(replay_memory)}) is less than batch size ({batch_size})")
+        #print(f"Replay memory size ({len(replay_memory)}) is less than batch size ({batch_size})")
         return None
     
     transitions = replay_memory.sample(batch_size)

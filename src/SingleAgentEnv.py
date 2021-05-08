@@ -19,6 +19,8 @@ class SingleAgentEnv():
     """
     def __init__(self, agent_params):
         model=None
+        if 'max_CL_objects' in agent_params: # allows fair label comparison in Curriculum Learning
+            self.max_CL_objects = agent_params['max_CL_objects']
         self.max_objects = agent_params['max_objects']
         self.obs_dim = agent_params['obs_dim']
         self.actions_dict = { n : '' for n in range(agent_params['n_actions']) } 
@@ -175,8 +177,19 @@ class SingleAgentEnv():
     
     def get_reward(self, q_values):
         
-        # reward based on labels; [0] because of tensor qvalues 
-        label_slice = q_values.detach().numpy()[0][-self.max_objects:]
+        # reward based on labels; [0] because of tensor qvalues
+        # enable Curriculum Learning
+        max_CL_objects = None 
+        try:
+            max_CL_objects = self.max_CL_objects
+        except AttributeError:
+            pass
+        
+        if max_CL_objects != None:
+            label_slice = q_values.detach().numpy()[0][-max_CL_objects:]
+        else:
+            label_slice = q_values.detach().numpy()[0][-self.max_objects:]
+        
         label_dist = self.compare_labels(label_slice, self.obs_label)
         
         if label_dist == 0:
