@@ -33,7 +33,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
         init_time = time.gmtime(time.time())
         run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mon)+str(init_time.tm_hour)+str(init_time.tm_min)
     else:
-        n_iter = CL_settings["n_iters"]
+        n_iter = CL_settings["n_iter"]
         run_timestamp = CL_settings["run_timestamp"]
     
     for episode in range(n_episodes):
@@ -74,5 +74,5 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             target_net.load_state_dict(policy_net.state_dict())
     
     # env.close() ?
-    CL_settings["n_iters"] = n_iter
+    CL_settings["n_iter"] = n_iter
     print("Done")
