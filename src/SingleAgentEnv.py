@@ -19,7 +19,9 @@ class SingleAgentEnv():
     """
     def __init__(self, agent_params):
         model=None
+        self.CL = False # using Curriculum Learning
         if 'max_CL_objects' in agent_params: # allows fair label comparison in Curriculum Learning
+            self.CL = True
             self.max_CL_objects = agent_params['max_CL_objects']
         self.max_objects = agent_params['max_objects']
         self.obs_dim = agent_params['obs_dim']
@@ -30,7 +32,10 @@ class SingleAgentEnv():
         self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
         # associated label
         num_objects = self.obs.sum(dtype=int)
-        self.obs_label = np.zeros(self.max_objects)
+        if self.CL:
+            self.obs_label = np.zeros(self.max_CL_objects)
+        else:    
+            self.obs_label = np.zeros(self.max_objects)
         self.obs_label[num_objects-1] = 1
         
         # Initialize external representation (the piece of paper the agent is writing on)
@@ -148,7 +153,10 @@ class SingleAgentEnv():
         self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
         # associated label
         num_objects = self.obs.sum(dtype=int)
-        self.obs_label = np.zeros(self.max_objects)
+        if self.CL:
+            self.obs_label = np.zeros(self.max_CL_objects)
+        else:    
+            self.obs_label = np.zeros(self.max_objects)
         self.obs_label[num_objects-1] = 1 # vector form
         
         # reset external representation
@@ -179,14 +187,9 @@ class SingleAgentEnv():
         
         # reward based on labels; [0] because of tensor qvalues
         # enable Curriculum Learning
-        max_CL_objects = None 
-        try:
-            max_CL_objects = self.max_CL_objects
-        except AttributeError:
-            pass
         
-        if max_CL_objects != None:
-            label_slice = q_values.detach().numpy()[0][-max_CL_objects:]
+        if self.CL:
+            label_slice = q_values.detach().numpy()[0][-self.max_CL_objects:]
         else:
             label_slice = q_values.detach().numpy()[0][-self.max_objects:]
         
