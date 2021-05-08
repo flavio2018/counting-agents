@@ -5,7 +5,7 @@ from QLearning import optimize_model, get_qvalues
 import torch
 import time
 
-def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, gamma=0.999, target_update=10, batch_size=128):
+def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, gamma=0.999, target_update=10, batch_size=128, CL_settings=None):
     """
     Args:
         - env: The Gym-like environment.
@@ -28,9 +28,13 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
     
     policy_param = tau if tau != None else eps
     
-    n_iter = 0
-    init_time = time.gmtime(time.time())
-    run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mon)+str(init_time.tm_hour)+str(init_time.tm_min)
+    if CL_settings == None:
+        n_iter = 0
+        init_time = time.gmtime(time.time())
+        run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mon)+str(init_time.tm_hour)+str(init_time.tm_min)
+    else:
+        n_iter = CL_settings["n_iters"]
+        run_timestamp = CL_settings["run_timestamp"]
     
     for episode in range(n_episodes):
         # Initialize the environment and state
@@ -70,4 +74,5 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             target_net.load_state_dict(policy_net.state_dict())
     
     # env.close() ?
+    CL_settings["n_iters"] = n_iter
     print("Done")
