@@ -20,12 +20,14 @@ class SingleAgentEnv():
     def __init__(self, agent_params):
         model=None
         self.CL = False # using Curriculum Learning
+        
         if 'max_CL_objects' in agent_params: # allows fair label comparison in Curriculum Learning
             self.CL = True
             self.max_CL_objects = agent_params['max_CL_objects']
         self.max_objects = agent_params['max_objects']
         self.obs_dim = agent_params['obs_dim']
         self.actions_dict = { n : '' for n in range(agent_params['n_actions']) } 
+        self.max_episode_length = agent_params['max_episode_length']
         
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
@@ -49,7 +51,7 @@ class SingleAgentEnv():
         self.build_state()
         
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
-        self.otherinteractions = OtherInteractions(len(self.actions_dict), self.actions_dict)
+        #self.otherinteractions = OtherInteractions(len(self.actions_dict), self.actions_dict)
         
         # Initialize action vector
         self.action_vec = np.zeros((len(self.actions_dict), 1))
@@ -59,12 +61,16 @@ class SingleAgentEnv():
         self.fps_inv = 500 #ms
         self.is_submitted_ext_repr = False
         self.submitted_ext_repr = None
+        
+        # Initialize counter of steps in the environment with this scene
+        self.step_counter = 0
 
     def step(self, q_values):
         # Define how action interacts with environment: e.g. with observation space and external representation
         # self.obs.step(action_on_obs[action]) # no interaction with the observation space yet
         
         done = False # signal episode ending
+        self.step_counter += 1
         reward = 0 # TODO: reward when finger on object
         
         action = self.eps_greedy_modified(q_values) #TODO: generalize
@@ -81,11 +87,16 @@ class SingleAgentEnv():
         elif(action in self.ext_repr.action_codes):
             self.ext_repr.draw_point([self.fingerlayer_repr.pos_x, self.fingerlayer_repr.pos_y])
 
-        elif(action in self.otherinteractions.action_codes):
-            self.otherinteractions.step(action, self.max_objects, self.obs_label)
-            done = True
+        #elif(action in self.otherinteractions.action_codes):
+            #self.otherinteractions.step(action, self.max_objects, self.obs_label)
+            #done = True
         
         reward = self.get_reward(q_values)
+        
+        # new episode ending logic: if label is correct or 
+        # the episode lasted too long
+        if (reward == 1) or (self.step_counter > self.max_episode_length):
+            done = True
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int. When trained action-array is input.
@@ -168,6 +179,9 @@ class SingleAgentEnv():
         
         # reset whole state
         self.build_state()
+        
+        # reset counter of steps in an environment with a given scene
+        self.step_counter = 0
         
         return torch.Tensor(self.state)
 
@@ -294,6 +308,9 @@ class OtherInteractions():
         actions = ['submit']
         self.action_codes = set()
         
+        # this loop inserts an action in the general env_actions_dict 
+        # as soon as there is a free spot and as long as there are actions 
+        # to insert for this part of the environment
         i = 0
         for k, v in env_actions_dict.items():
             if v == '' and i < len(actions):
