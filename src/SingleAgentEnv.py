@@ -200,6 +200,8 @@ class SingleAgentEnv():
     def compare_labels(self, agent_label, true_label):
         """Encode here the label comparison dynamics.
         """
+        if len(agent_label) != len(true_label):
+            print("Agent label and true label have different sizes.")
         label_dist = np.abs(np.argmax(agent_label) - np.argmax(true_label))
         
         return label_dist
@@ -207,8 +209,8 @@ class SingleAgentEnv():
     def get_reward(self, q_values):
         
         # reward based on labels; [0] because of tensor qvalues
-        # enable Curriculum Learning
         
+        # enable Curriculum Learning
         if self.CL:
             label_slice = q_values.detach().numpy()[0][-self.max_CL_objects:]
         else:
