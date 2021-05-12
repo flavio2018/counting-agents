@@ -302,8 +302,8 @@ class ExternalRepresentation():
         self.externalrepresentation += draw_pixels
 
     def draw_point(self, pos):
-        # This line implements if ext_repr[at_curr_pos]==0 --> set it to 1. if==1 set to 0.
-        self.externalrepresentation[pos[0], pos[1]] = -self.externalrepresentation[pos[0], pos[1]] + 1
+        # This line implements if ext_repr[at_curr_pos]==0 --> set it to 1. if==1 leave it like that.
+        self.externalrepresentation[pos[0], pos[1]] += abs(self.externalrepresentation[pos[0], pos[1]] - 1)
 
 
 class OtherInteractions():
