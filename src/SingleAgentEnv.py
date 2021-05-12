@@ -118,6 +118,8 @@ class SingleAgentEnv():
     def eps_greedy_modified(self, q_values):
         eps = .1 # TODO: not-hardcoded
         
+        n_actions = len(self.actions_dict)
+        
         sample = random.random()
         if sample > eps:
             action = q_values.max(1)[1].item() - 1 
