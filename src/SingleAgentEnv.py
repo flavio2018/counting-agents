@@ -47,6 +47,13 @@ class SingleAgentEnv():
         self.fingerlayer_scene = FingerLayer(self.obs_dim, len(self.actions_dict), self.actions_dict)
         self.fingerlayer_repr = FingerLayer(self.obs_dim, len(self.actions_dict), self.actions_dict)
         
+        # Fill actions dict empty positions (number labels)
+        l = 1
+        for k in self.actions_dict:
+            if self.actions_dict[k] == '':
+                self.actions_dict[k] = str(l)
+                l += 1
+        
         # Initialize whole state space: concatenated observation and external representation
         self.build_state()
         
