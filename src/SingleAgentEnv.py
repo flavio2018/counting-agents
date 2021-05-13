@@ -111,6 +111,10 @@ class SingleAgentEnv():
         self.action_vec = np.zeros((len(self.actions_dict), 1))
         self.action_vec[action] = 1
         
+        chosen_label = np.argmax(q_values.detach().numpy()[0][-self.max_CL_objects:])
+        
+        self.action_vec[-self.max_CL_objects + chosen_label] = 1
+        
         self.build_state()
         
         return torch.Tensor(self.state), reward, done, 'info'
@@ -239,8 +243,7 @@ class SingleAgentEnv():
         # TODO: reward showing how to create repr. for small quantities         
         
         return reward
-        
-
+    
 class FingerLayer():
     """
     This class implements the finger movement part of the environment.
