@@ -22,7 +22,7 @@ class SingleAgentEnv():
         model=None
         self.CL = False # using Curriculum Learning
         
-        if 'max_CL_objects' in agent_params: # allows fair label comparison in Curriculum Learning
+        if 'max_CL_objects' in agent_params: # allows fair label comparison in Curriculum Learning (when we have CL the agent starts with the possibility to output labels for numerosities greater than the ones it has already seen in the beginning)
             self.CL = True
             self.max_CL_objects = agent_params['max_CL_objects']
         self.max_objects = agent_params['max_objects']
@@ -99,7 +99,7 @@ class SingleAgentEnv():
             #self.otherinteractions.step(action, self.max_objects, self.obs_label)
             #done = True
         
-        reward = self.get_reward(q_values)
+        reward = self.get_reward(action)
         
         # new episode ending logic: if label is correct or 
         # the episode lasted too long
@@ -110,10 +110,6 @@ class SingleAgentEnv():
         # manually by str/int. When trained action-array is input.
         self.action_vec = np.zeros((len(self.actions_dict), 1))
         self.action_vec[action] = 1
-        
-        chosen_label = np.argmax(q_values.detach().numpy()[0][-self.max_CL_objects:])
-        
-        self.action_vec[-self.max_CL_objects + chosen_label] = 1
         
         self.build_state()
         
@@ -210,26 +206,28 @@ class SingleAgentEnv():
         
         return label_dist
     
-    def get_reward(self, q_values):
-        
-        # reward based on labels; [0] because of tensor qvalues
-        
-        # enable Curriculum Learning
+    def get_reward(self, action):
+        """Reward function. Currently implementing only label-based reward logic, giving positive reward when the action is a label action which corresponds to the correct label.
+        """
+        n_actions = len(self.actions_dict)
         if self.CL:
-            label_slice = q_values.detach().numpy()[0][-self.max_CL_objects:]
+            start_labels_actions = n_actions - self.max_CL_objects
         else:
-            label_slice = q_values.detach().numpy()[0][-self.max_objects:]
+            start_labels_actions = n_actions - self.max_objects
+            
+        reward = 0
         
-        label_dist = self.compare_labels(label_slice, self.obs_label)
+        if action in range(start_labels_actions, n_actions):
+            chosen_label = int(self.actions_dict[action])
+            true_label = np.argmax(self.obs_label) + 1
+            
+            if chosen_label == true_label:
+                reward = 1
         
-        if label_dist == 0:
-            reward = 1
-        #elif label_dist < 2:
-            #reward = .5
-        #elif label_dist < 3:
-            #reward = .2
-        else:
-            reward = 0
+        return reward 
+        
+        # in case we want to keep label distance-based rewards...
+        #label_dist = self.compare_labels(label_slice, self.obs_label)
             
         # reward based on scene finger position
         #finger_index = self.fingerlayer_scene.fingerlayer.argmax()
@@ -240,9 +238,7 @@ class SingleAgentEnv():
             
         # TODO: reward diminishing with time
 
-        # TODO: reward showing how to create repr. for small quantities         
-        
-        return reward
+        # TODO: reward showing how to create repr. for small quantities
     
 class FingerLayer():
     """
