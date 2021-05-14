@@ -79,13 +79,14 @@ class SingleAgentEnv():
         
         done = False # signal episode ending
         self.step_counter += 1
-        reward = 0 # TODO: reward when finger on object?
+        # TODO: reward when finger on object?
         
         #action = self.eps_greedy_modified(q_values) # TODO: generalize
         if n_iter < 1000:
-            tau = self.get_tau(n_iter)
+            tau = self.get_tau(n_iter) # follow exploration profiles for the first 1k iters
         else:
-            tau = 0
+            tau = 0 # then choose according to the q-values only
+        
         action = self.softmax_action_selection(q_values, tau)
         
         if(action in self.fingerlayer_scene.action_codes):
@@ -161,8 +162,8 @@ class SingleAgentEnv():
         
         sample = random.random()
         if sample > eps:
-            action = q_values.max(1)[1].item() - 1 
-            # max(1) is for batch, [1] is for index, .item() is for scalar, -1 since we start from 0
+            action = q_values.max(1)[1].item() 
+            # max(1) is for batch, [1] is for index, .item() is for scalar
         else:
             action = random.randrange(n_actions)
         
