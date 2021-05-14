@@ -73,15 +73,20 @@ class SingleAgentEnv():
         # Initialize counter of steps in the environment with this scene
         self.step_counter = 0
 
-    def step(self, q_values):
+    def step(self, q_values, n_iter):
         # Define how action interacts with environment: e.g. with observation space and external representation
         # self.obs.step(action_on_obs[action]) # no interaction with the observation space yet
         
         done = False # signal episode ending
         self.step_counter += 1
-        reward = 0 # TODO: reward when finger on object
+        reward = 0 # TODO: reward when finger on object?
         
-        action = self.eps_greedy_modified(q_values) #TODO: generalize
+        #action = self.eps_greedy_modified(q_values) # TODO: generalize
+        if n_iter < 1000:
+            tau = self.get_tau(n_iter)
+        else:
+            tau = 0
+        action = self.softmax_action_selection(q_values, tau)
         
         if(action in self.fingerlayer_scene.action_codes):
             self.fingerlayer_scene.step(action, self.actions_dict)
@@ -114,9 +119,43 @@ class SingleAgentEnv():
         self.build_state()
         
         return torch.Tensor(self.state), reward, done, 'info'
-            
-    def eps_greedy_modified(self, q_values):
-        eps = .1 # TODO: not-hardcoded
+        
+    def get_tau(n_iter): 
+        initial_value = 5
+        num_iterations = 1000
+        exp_decay = np.exp(-np.log(initial_value) / num_iterations * 6) # We compute the exponential decay in such a way the shape of the exploration profile does not depend on the number of iterations
+        return initial_value * (exp_decay ** n_iter)
+    
+    def softmax_action_selection(self, q_values, temperature):
+        """
+        Args:
+            - q_values: output of the network
+            - temperature: The value of temperature parameter used in the softmax function
+        """
+        
+        if temperature < 0:
+            raise Exception('The temperature value must be greater than or equal to 0 ')
+        
+        # If the temperature is 0, just select the best action 
+        # using the eps-greedy policy with epsilon = 0
+        if temperature == 0:
+            return self.eps_greedy_modified(q_values, 0)
+        
+        # Apply softmax with temp
+        # set a minimum to the temperature for numerical stability
+        temperature = max(temperature, 1e-8) 
+        softmax_out = nn.functional.softmax(- q_values/temperature, dim=0)
+   
+        # Sample the action using softmax output as mass pdf
+        all_possible_actions = np.arange(0, softmax_out.shape[-1])
+        # this samples a random element from "all_possible_actions" 
+        # with the probability distribution p (softmax_out in this case)
+        action =  np.random.choice(all_possible_actions, p=softmax_out.numpy())
+        
+        return action
+    
+    def eps_greedy_modified(self, q_values, eps=.1):
+        # TODO: eps not-hardcoded
         
         n_actions = len(self.actions_dict)
         

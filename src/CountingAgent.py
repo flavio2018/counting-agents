@@ -59,8 +59,9 @@ class CountingAgent(nn.Module):
         self.apply(initialize_weights)
         
     def forward(self, x):
+        #print(x)
         x, C = self.ConvLSTMCell(x)
-        
+        #print(x)
         x = self.Vis2Act(x)
         
         return x
