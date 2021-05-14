@@ -144,7 +144,7 @@ class SingleAgentEnv():
         # Apply softmax with temp
         # set a minimum to the temperature for numerical stability
         temperature = max(temperature, 1e-8) 
-        softmax_out = nn.functional.softmax(- q_values/temperature, dim=0)
+        softmax_out = torch.nn.functional.softmax(- q_values/temperature, dim=0)
    
         # Sample the action using softmax output as mass pdf
         all_possible_actions = np.arange(0, softmax_out.shape[-1])
