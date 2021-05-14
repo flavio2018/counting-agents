@@ -223,6 +223,8 @@ class SingleAgentEnv():
             
             if chosen_label == true_label:
                 reward = 1
+            else:
+                reward = -.5
         
         return reward 
         
