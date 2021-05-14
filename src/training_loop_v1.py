@@ -47,7 +47,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             # Choose the action following the policy
             #action = policy(state, policy_net, policy_param)
             q_values = get_qvalues(state, policy_net)
-            next_state, reward, done, info = env.step(q_values)
+            next_state, reward, done, info = env.step(q_values, n_iter)
             
             log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
             
