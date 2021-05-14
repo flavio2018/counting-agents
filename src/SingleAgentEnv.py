@@ -82,7 +82,7 @@ class SingleAgentEnv():
         # TODO: reward when finger on object?
         
         #action = self.eps_greedy_modified(q_values) # TODO: generalize
-        if n_iter < 1000:
+        if n_iter < 2000:
             tau = self.get_tau(n_iter) # follow exploration profiles for the first 1k iters
         else:
             tau = 0 # then choose according to the q-values only
