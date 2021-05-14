@@ -120,7 +120,7 @@ class SingleAgentEnv():
         
         return torch.Tensor(self.state), reward, done, 'info'
         
-    def get_tau(n_iter): 
+    def get_tau(self, n_iter): 
         initial_value = 5
         num_iterations = 1000
         exp_decay = np.exp(-np.log(initial_value) / num_iterations * 6) # We compute the exponential decay in such a way the shape of the exploration profile does not depend on the number of iterations
