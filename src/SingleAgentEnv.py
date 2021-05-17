@@ -305,7 +305,8 @@ class SingleAgentEnv:
         # implementing a simple curiosity mechanism
         current_state_hash = self.get_state_hash()
         n_visits = visit_history.get(current_state_hash, 0)
-        reward += self.get_curiosity_reward(n_visits)
+        if n_visits == 0:
+            reward += 1
 
         visit_history.setdefault(current_state_hash, 0)
         visit_history[current_state_hash] += 1
@@ -337,6 +338,7 @@ class SingleAgentEnv:
         # the greater the scale parameter, the larger the scale of the curve
         # with the default parameters, the prize for unvisited states is .1
         return (bending / (bending + n_visits)) * scale
+
 
 class FingerLayer:
     """
