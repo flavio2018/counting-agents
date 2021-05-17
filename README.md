@@ -78,4 +78,4 @@ Punishment for action 'choose' before 'stop'. Or having the same node for them. 
 
 Final reward: when answer-action was correct.
 
-Intermediate rewards: touching objects (?), no number words. 
+Intermediate rewards: touching objects (?), no number words.

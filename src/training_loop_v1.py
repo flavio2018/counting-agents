@@ -1,11 +1,19 @@
 """
-This file contains the training loop for the agents involved in the communication/counting task. The loop involves two CountingAgents objects, a Gym-like environment and includes the optimization procedure based on Q-Learning.
+This file contains the training loop for the agents involved in the
+communication/counting task. The loop involves two CountingAgents objects,
+a Gym-like environment and includes the optimization procedure
+based on Q-Learning.
 """
+
 from QLearning import optimize_model, get_qvalues
 import torch
 import time
 
-def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy, loss_fn, optimizer, log, eps=None, tau=None, gamma=0.999, target_update=10, batch_size=128, CL_settings=None):
+
+def training_loop(env, n_episodes, replay_memory, policy_net,
+                  target_net, loss_fn, optimizer, log, visit_history,
+                  eps=None, tau=None, gamma=0.999, target_update=10,
+                  batch_size=128, CL_settings=None):
     """
     Args:
         - env: The Gym-like environment.
@@ -23,12 +31,11 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
         - target_update: Number of episodes to wait before updating the target network
         - batch_size: Size of the batch sampled from the Replay Memory
     """
-    if eps == tau == None:
+    if eps is None and tau is None:
+        print("Both tau and epsilon are None.")
         return
-    
-    policy_param = tau if tau != None else eps
-    
-    if CL_settings == None:
+
+    if CL_settings is None:
         n_iter = 0
         init_time = time.gmtime(time.time())
         run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mon)+str(init_time.tm_hour)+str(init_time.tm_min)
@@ -45,15 +52,15 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             n_iter += 1
             
             # Choose the action following the policy
-            #action = policy(state, policy_net, policy_param)
             q_values = get_qvalues(state, policy_net)
-            next_state, reward, done, info = env.step(q_values, n_iter)
+            next_state, reward, done, info = env.step(q_values, n_iter, visit_history)
             
             log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
             
-            reward = torch.tensor([reward]) #, device=device) TODO CUDA
+            reward = torch.tensor([reward])  # , device=device) TODO: CUDA
             
-            if done: next_state = None
+            if done:
+                next_state = None
                 
             # Store the transition in memory
             replay_memory.push(state, q_values, next_state, reward)
@@ -64,7 +71,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             # Perform one step of the optimization (on the policy network)
             loss_val = optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, gamma)
             
-            if loss_val != None:
+            if loss_val is not None:
                 log.add_scalar(f'Loss/train_{run_timestamp}', loss_val.item(), n_iter)
         
         # Update the target network every target_update episodes
@@ -72,7 +79,6 @@ def training_loop(env, n_episodes, replay_memory, policy_net, target_net, policy
             print(f'E {episode} | Updating target network...')
             # Copy the weights of the policy network to the target network
             target_net.load_state_dict(policy_net.state_dict())
-    
-    # env.close() ?
+
     CL_settings["n_iter"] = n_iter
     print("Done")

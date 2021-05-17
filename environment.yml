@@ -2,3 +2,8 @@ name: counting-agents
 
 dependencies:
     - python=3.8.5
+    - pytorch
+    - numpy
+    - Pillow
+    - pexpect
+    - pycodestyle
