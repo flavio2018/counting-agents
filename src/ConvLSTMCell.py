@@ -7,9 +7,11 @@ References:
 """
 
 import torch
+
 from torch import nn
-from HadamardProduct import HadamardProduct
-from utils import initialize_weights
+
+from src.HadamardProduct import HadamardProduct
+from src.utils import initialize_weights
 
 
 class ConvLSTMCell(nn.Module):

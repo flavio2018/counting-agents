@@ -1,12 +1,19 @@
 """
-This script contains the class of the complete agent involved in the communication/counting task. The agent is composed of a core ConvLSTM module and two Fully Connected layers which build a visual representation and it's mapping to the actions space, respectively.
+This script contains the class of the complete agent
+involved in the communication/counting task. The agent
+is composed of a core ConvLSTM module and two Fully
+Connected layers which build a visual representation
+and it's mapping to the actions space, respectively.
 """
 
-import torch
-from torch import nn
 import numpy as np
-from ConvLSTMCell import ConvLSTMCell
-from utils import initialize_weights
+import torch
+
+from torch import nn
+
+from src.ConvLSTMCell import ConvLSTMCell
+from src.utils import initialize_weights
+
 
 class CountingAgent(nn.Module):
     """
