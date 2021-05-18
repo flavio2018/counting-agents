@@ -9,10 +9,11 @@ import time
 
 import numpy as np
 import torch
+
 from IPython.display import display
 from PIL import Image
 
-import utils
+from src import utils
 
 
 # TODO (?): later in utils

@@ -5,9 +5,10 @@ a Gym-like environment and includes the optimization procedure
 based on Q-Learning.
 """
 
-from QLearning import optimize_model, get_qvalues
-import torch
 import time
+import torch
+
+from src.QLearning import optimize_model, get_qvalues
 
 
 def training_loop(env, n_episodes, replay_memory, policy_net,
