@@ -5,7 +5,7 @@ class Reward:
     def __init__(self, reward_parameters: dict):
         self.parameters = reward_parameters
 
-    def get_reward(self, env: src.SingleAgentEnv, action: int, visit_history: dict) -> float:
+    def get_reward(self, env, action: int, visit_history: dict) -> float:
         """Reward function. Currently implementing only label-based reward
         logic, giving positive reward when the action is a label action
         which corresponds to the correct label. We can also give a negative

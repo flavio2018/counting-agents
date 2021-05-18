@@ -25,7 +25,7 @@ class SingleAgentEnv:
     This class implements the environment as a whole.
     """
 
-    def __init__(self, agent_params: dict, reward: src.Reward):
+    def __init__(self, agent_params: dict, reward):
         model = None
         self.CL = False  # using Curriculum Learning
 
