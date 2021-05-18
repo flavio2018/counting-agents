@@ -1,17 +1,27 @@
 """
-This file contains the implementation of the optimization procedure used to train the agents' networks in a reinforcement learning setting using the Q-Learning algorithm. The code assumes the use of an external Replay Memory (implemented in ReplayMemory.py) and the use of a Policy Network and a Target Network to improve stability.
+This file contains the implementation of the optimization procedure used
+to train the agents' networks in a reinforcement learning setting
+using the Q-Learning algorithm. The code assumes the use of an
+external Replay Memory (implemented in ReplayMemory.py) and the
+use of a Policy Network and a Target Network to improve stability.
 
-This file also contains two functions implementing the softmax and the epsilong-greedy action selection policies, used to choose the next action of the agent based on the Q Values computed by the network.
+This file also contains two functions implementing the softmax
+and the epsilong-greedy action selection policies, used to
+choose the next action of the agent based on the Q Values
+computed by the network.
 
 References: 
     - https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 """
 
 import random
+
+import numpy as np
 import torch
+
 from torch import nn
 from collections import namedtuple
-import numpy as np
+
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))

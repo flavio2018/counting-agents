@@ -9,10 +9,11 @@ import time
 
 import numpy as np
 import torch
+
 from IPython.display import display
 from PIL import Image
 
-import utils
+from src import utils
 
 
 # TODO (?): later in utils
@@ -306,7 +307,7 @@ class SingleAgentEnv:
         current_state_hash = self.get_state_hash()
         n_visits = visit_history.get(current_state_hash, 0)
         if n_visits == 0:
-            reward += 1
+            reward += .1
 
         visit_history.setdefault(current_state_hash, 0)
         visit_history[current_state_hash] += 1

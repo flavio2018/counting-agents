@@ -1,13 +1,16 @@
 """
-This file contains the implementation of an external Replay Memory used to train the agents with the Q-Learning algorithm.
+This file contains the implementation of an external Replay Memory
+used to train the agents with the Q-Learning algorithm.
 
 References:
     - https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 """
 
 import random
+
 from collections import namedtuple 
-from collections import deque # what we need for the replay memeory
+from collections import deque # what we need for the replay memory
+
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))

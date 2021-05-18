@@ -6,7 +6,9 @@ References:
 """
 
 import torch
+
 from torch import nn
+
 
 class HadamardProduct(nn.Module):
     """A Hadamard product layer.
