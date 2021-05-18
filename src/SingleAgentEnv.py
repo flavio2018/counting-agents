@@ -25,7 +25,7 @@ class SingleAgentEnv:
     This class implements the environment as a whole.
     """
 
-    def __init__(self, agent_params):
+    def __init__(self, agent_params: dict, reward: src.Reward):
         model = None
         self.CL = False  # using Curriculum Learning
 
@@ -40,6 +40,8 @@ class SingleAgentEnv:
         self.obs_dim = agent_params['obs_dim']
         self.actions_dict = {n: '' for n in range(agent_params['n_actions'])}
         self.max_episode_length = agent_params['max_episode_length']
+
+        self.reward = reward
 
         # Initialize observation: 1-max_objects randomly placed
         # 1s placed on a 0-grid of shape dim x dim
@@ -125,7 +127,7 @@ class SingleAgentEnv:
         # self.otherinteractions.step(action, self.max_objects, self.obs_label)
         # done = True
 
-        reward = self.get_reward(action, visit_history)
+        reward = self.reward.get_reward(action, visit_history)
 
         # new episode ending logic: if label is correct or
         # the episode lasted too long
@@ -277,56 +279,6 @@ class SingleAgentEnv:
         label_dist = np.abs(np.argmax(agent_label) - np.argmax(true_label))
 
         return label_dist
-
-    def get_reward(self, action: int, visit_history: dict) -> float:
-        """Reward function. Currently implementing only label-based reward
-        logic, giving positive reward when the action is a label action
-        which corresponds to the correct label. We can also give a negative
-        reward to the agent when it outputs the wrong label.
-        We can implement a simple curiosity mechanism, saving
-        the number of times the agent has been in each different state.
-        """
-        n_actions = len(self.actions_dict)
-        if self.CL:
-            start_labels_actions = n_actions - self.max_CL_objects
-        else:
-            start_labels_actions = n_actions - self.max_objects
-
-        reward = 0
-
-        if action in range(start_labels_actions, n_actions):
-            chosen_label = int(self.actions_dict[action])
-            true_label = np.argmax(self.obs_label) + 1
-
-            if chosen_label == true_label:
-                reward = 1
-            else:
-                reward = -.5
-
-        # implementing a simple curiosity mechanism
-        current_state_hash = self.get_state_hash()
-        n_visits = visit_history.get(current_state_hash, 0)
-        if n_visits == 0:
-            reward += .1
-
-        visit_history.setdefault(current_state_hash, 0)
-        visit_history[current_state_hash] += 1
-
-        return reward
-
-        # in case we want to keep label distance-based rewards...
-        # label_dist = self.compare_labels(label_slice, self.obs_label)
-
-        # reward based on scene finger position
-        # finger_index = self.fingerlayer_scene.fingerlayer.argmax()
-        # finger_position = np.unravel_index(finger_index, self.fingerlayer_scene.fingerlayer.shape)
-
-        # if self.obs[finger_position] == 1:
-        # reward += 0.1 # TODO: diminishing reward?
-
-        # TODO: reward diminishing with time
-
-        # TODO: reward showing how to create repr. for small quantities
 
     def get_state_hash(self):
         flattened_state = self.state.flatten()
