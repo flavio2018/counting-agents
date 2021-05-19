@@ -40,6 +40,7 @@ class SingleAgentEnv:
         self.obs_dim = agent_params['obs_dim']
         self.actions_dict = {n: '' for n in range(agent_params['n_actions'])}
         self.max_episode_length = agent_params['max_episode_length']
+        self.exploration_phase_len = agent_params['exploration_phase_len']
 
         self.reward = reward
 
@@ -92,7 +93,7 @@ class SingleAgentEnv:
         # Initialize counter of steps in the environment with this scene
         self.step_counter = 0
 
-    def step(self, q_values, n_iter, visit_history):
+    def step(self, q_values, n_iter_cl_phase, visit_history):
         # Define how action interacts with environment:
         # e.g. with observation space and external representation
 
@@ -101,9 +102,9 @@ class SingleAgentEnv:
         # TODO: reward when finger on object?
 
         # action = self.eps_greedy_modified(q_values) # TODO: generalize
-        if n_iter < 2000:
-            # follow exploration profiles for the first 1k iters
-            tau = self.get_tau(n_iter)
+        if n_iter_cl_phase < self.exploration_phase_len:
+            # follow exploration profiles for the first k iters
+            tau = self.get_tau(n_iter_cl_phase)
         else:
             tau = 0  # then choose according to the q-values only
 
@@ -131,7 +132,7 @@ class SingleAgentEnv:
 
         # new episode ending logic: if label is correct or
         # the episode lasted too long
-        if (reward == 1) or (self.step_counter > self.max_episode_length):
+        if (reward >= 1) or (self.step_counter > self.max_episode_length):
             done = True
 
         # Build action-array according to the int/string action.

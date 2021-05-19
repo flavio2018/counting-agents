@@ -41,6 +41,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
         init_time = time.gmtime(time.time())
         run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mon)+str(init_time.tm_hour)+str(init_time.tm_min)
     else:
+        n_iter_cl_phase = 0
         n_iter = CL_settings["n_iter"]
         run_timestamp = CL_settings["run_timestamp"]
     
@@ -52,9 +53,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
         while not done:
             n_iter += 1
             
-            # Choose the action following the policy
             q_values = get_qvalues(state, policy_net)
-            next_state, reward, done, info = env.step(q_values, n_iter, visit_history)
+            next_state, reward, done, info = env.step(q_values, n_iter_cl_phase, visit_history)
             
             log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
             
