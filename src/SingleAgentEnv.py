@@ -47,8 +47,9 @@ class SingleAgentEnv:
         # Initialize observation: 1-max_objects randomly placed
         # 1s placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
+        n_objects = np.random.randint(self.max_objects) + 1
         ones_mask = np.random.choice(self.obs.size,
-                                     self.max_objects,
+                                     n_objects,
                                      replace=False)
         self.obs.ravel()[ones_mask] = 1
         # associated label
