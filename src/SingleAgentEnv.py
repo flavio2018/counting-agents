@@ -28,6 +28,7 @@ class SingleAgentEnv:
     def __init__(self, agent_params: dict, reward):
         model = None
         self.CL = False  # using Curriculum Learning
+        self.test_mode = False
 
         # allows fair label comparison in Curriculum Learning:
         # (when we have CL the agent starts with the possibility
@@ -305,8 +306,10 @@ class FingerLayer:
         self.fingerlayer = np.zeros((layer_dim, layer_dim))
         self.max_x = layer_dim - 1
         self.max_y = layer_dim - 1
-        self.pos_x = random.randint(0, layer_dim - 1)
+        self.pos_x = random.randint(0, layer_dim - 1)  # random initial finger position
         self.pos_y = random.randint(0, layer_dim - 1)
+        self.pos_x = 0  # fixed initial finger position
+        self.pos_y = 0
         self.fingerlayer[self.pos_x, self.pos_y] = 1
 
         actions = ['left', 'right', 'up', 'down']
