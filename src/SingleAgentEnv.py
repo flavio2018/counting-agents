@@ -28,7 +28,6 @@ class SingleAgentEnv:
     def __init__(self, agent_params: dict, reward):
         model = None
         self.CL = False  # using Curriculum Learning
-        self.test_mode = False
 
         # allows fair label comparison in Curriculum Learning:
         # (when we have CL the agent starts with the possibility
@@ -37,6 +36,7 @@ class SingleAgentEnv:
         if 'max_CL_objects' in agent_params:
             self.CL = True
             self.max_CL_objects = agent_params['max_CL_objects']
+
         self.max_objects = agent_params['max_objects']
         self.obs_dim = agent_params['obs_dim']
         self.actions_dict = {n: '' for n in range(agent_params['n_actions'])}
@@ -45,21 +45,9 @@ class SingleAgentEnv:
 
         self.reward = reward
 
-        # Initialize observation: 1-max_objects randomly placed
-        # 1s placed on a 0-grid of shape dim x dim
-        self.obs = np.zeros((self.obs_dim, self.obs_dim))
-        n_objects = np.random.randint(self.max_objects) + 1
-        ones_mask = np.random.choice(self.obs.size,
-                                     n_objects,
-                                     replace=False)
-        self.obs.ravel()[ones_mask] = 1
-        # associated label
-        num_objects = self.obs.sum(dtype=int)
-        if self.CL:
-            self.obs_label = np.zeros(self.max_CL_objects)
-        else:
-            self.obs_label = np.zeros(self.max_objects)
-        self.obs_label[num_objects - 1] = 1
+        self.generate_observation()
+
+        self.generate_label()
 
         # Initialize external representation
         # (the piece of paper the agent is writing on)
@@ -157,6 +145,26 @@ class SingleAgentEnv:
             initial_value) / num_iterations * 6)
         return initial_value * (exp_decay ** n_iter)
 
+    def generate_label(self):
+        # generate label associated with observation
+        num_objects = self.obs.sum(dtype=int)
+        if self.CL:
+            self.obs_label = np.zeros(self.max_CL_objects)
+        else:
+            self.obs_label = np.zeros(self.max_objects)
+        self.obs_label[num_objects - 1] = 1
+
+    def generate_observation(self):
+        # generate new observation
+        # k objects (k chosen randomly in [1, max_objects])
+        # randomly placed on a 0-grid of shape dim x dim
+        self.obs = np.zeros((self.obs_dim, self.obs_dim))
+        n_objects = np.random.randint(self.max_objects) + 1
+        ones_mask = np.random.choice(self.obs.size,
+                                     n_objects,
+                                     replace=False)
+        self.obs.ravel()[ones_mask] = 1
+
     def softmax_action_selection(self, q_values, temperature):
         """
         Args:
@@ -242,16 +250,9 @@ class SingleAgentEnv:
         return total_img
 
     def reset(self):
-        # generate new observation
-        self.obs = np.zeros((self.obs_dim, self.obs_dim))
-        self.obs.ravel()[np.random.choice(self.obs.size, self.max_objects, replace=False)] = 1
-        # associated label
-        num_objects = self.obs.sum(dtype=int)
-        if self.CL:
-            self.obs_label = np.zeros(self.max_CL_objects)
-        else:
-            self.obs_label = np.zeros(self.max_objects)
-        self.obs_label[num_objects - 1] = 1  # vector form
+        self.generate_observation()
+
+        self.generate_label()
 
         # reset external representation
         self.ext_repr = ExternalRepresentation(self.obs_dim, self.actions_dict)
