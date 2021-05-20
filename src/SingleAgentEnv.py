@@ -94,7 +94,7 @@ class SingleAgentEnv:
         # action = self.eps_greedy_modified(q_values) # TODO: generalize
         if n_iter_cl_phase < self.exploration_phase_len:
             # follow exploration profiles for the first k iters
-            tau = self.get_tau(n_iter_cl_phase)
+            tau = self.get_tau(n_iter_cl_phase, self.exploration_phase_len)
         else:
             tau = 0  # then choose according to the q-values only
 
@@ -136,9 +136,8 @@ class SingleAgentEnv:
         return torch.Tensor(self.state), reward, done, 'info'
 
     @staticmethod
-    def get_tau(n_iter):
+    def get_tau(n_iter, num_iterations):
         initial_value = 5
-        num_iterations = 1000
         # We compute the exponential decay in such a way the shape of the
         # exploration profile does not depend on the number of iterations
         exp_decay = np.exp(-np.log(
