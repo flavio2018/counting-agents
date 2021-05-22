@@ -42,6 +42,7 @@ class SingleAgentEnv:
         self.actions_dict = {n: '' for n in range(agent_params['n_actions'])}
         self.max_episode_length = agent_params['max_episode_length']
         self.exploration_phase_len = agent_params['exploration_phase_len']
+        self.generate_random_nobj = agent_params['random_nobj']
 
         self.reward = reward
 
@@ -158,7 +159,11 @@ class SingleAgentEnv:
         # k objects (k chosen randomly in [1, max_objects])
         # randomly placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
-        n_objects = np.random.randint(self.max_objects) + 1
+        if self.generate_random_nobj:
+            n_objects = np.random.randint(self.max_objects) + 1
+        else:
+            n_objects = self.max_objects
+
         ones_mask = np.random.choice(self.obs.size,
                                      n_objects,
                                      replace=False)
