@@ -40,6 +40,9 @@ class Reward:
             visit_history.setdefault(current_state_hash, 0)
             visit_history[current_state_hash] += 1
 
+        if self.parameters['time_penalty']:
+            reward -= self.parameters['time_penalty_value']
+
         return reward
 
         # in case we want to keep label distance-based rewards...
