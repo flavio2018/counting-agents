@@ -43,7 +43,7 @@ class Reward:
             visit_history[current_state_hash] += 1
 
         if self.parameters['time_penalty']:
-            reward -= env.step_counter*self.parameters['time_penalty_value']
+            reward -= self.parameters['time_penalty_value']
 
         return reward, correct_label
 
