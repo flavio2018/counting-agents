@@ -26,6 +26,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
         - loss_fn: The loss function chosen.
         - optimizer: PyTorch implementation of the chosen optimization algorithm
         - log: A TensorBoard SummaryWriter object
+        - visit_history: Dict {state: n_visits} used to implement curiosity mechanism
         - eps: The epsilon parameter for the eps-greedy policy.
         - tau: The temperature parameter for the softmax policy.        
         - gamma: Gamma parameter in the Q-Learning algorithm for long-term reward
@@ -55,7 +56,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             n_iter_cl_phase += 1
             
             q_values = get_qvalues(state, policy_net)
-            next_state, reward, done, info = env.step(q_values, n_iter_cl_phase, visit_history)
+            next_state, reward, done, correct_label = env.step(q_values, n_iter_cl_phase, visit_history)
             
             log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
             

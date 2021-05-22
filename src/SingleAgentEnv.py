@@ -133,7 +133,7 @@ class SingleAgentEnv:
 
         self.build_state()
 
-        return torch.Tensor(self.state), reward, done, 'info'
+        return torch.Tensor(self.state), reward, done, correct_label
 
     @staticmethod
     def get_tau(n_iter, num_iterations):
