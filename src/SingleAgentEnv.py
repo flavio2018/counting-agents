@@ -42,7 +42,7 @@ class SingleAgentEnv:
         self.actions_dict = {n: '' for n in range(agent_params['n_actions'])}
         self.max_episode_length = agent_params['max_episode_length']
         self.exploration_phase_len = agent_params['exploration_phase_len']
-        self.generate_random_nobj = agent_params['random_nobj']
+        self.generate_random_nobj = agent_params['generate_random_nobj']
 
         self.reward = reward
 
