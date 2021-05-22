@@ -52,7 +52,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
     
         while not done:
             n_iter += 1
-            n_iter_cl_phase += 1 # unuseful comment
+            n_iter_cl_phase += 1
             
             q_values = get_qvalues(state, policy_net)
             next_state, reward, done, info = env.step(q_values, n_iter_cl_phase, visit_history)
