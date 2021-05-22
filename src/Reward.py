@@ -21,6 +21,7 @@ class Reward:
             start_labels_actions = n_actions - env.max_objects
 
         reward = 0
+        correct_label = False
 
         if action in range(start_labels_actions, n_actions):
             chosen_label = int(env.actions_dict[action])
@@ -28,6 +29,7 @@ class Reward:
 
             if chosen_label == true_label:
                 reward = 1
+                correct_label = True
             elif self.parameters['bad_label_punishment']:
                 reward = -.5
 
@@ -44,7 +46,7 @@ class Reward:
         if self.parameters['time_penalty']:
             reward -= n_iter_cl_phase*self.parameters['time_penalty_value']
 
-        return reward
+        return reward, correct_label
 
         # in case we want to keep label distance-based rewards...
         # label_dist = self.compare_labels(label_slice, self.obs_label)

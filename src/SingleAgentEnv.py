@@ -118,11 +118,11 @@ class SingleAgentEnv:
         # self.otherinteractions.step(action, self.max_objects, self.obs_label)
         # done = True
 
-        reward = self.reward.get_reward(self, action, visit_history, n_iter_cl_phase)
+        reward, correct_label = self.reward.get_reward(self, action, visit_history, n_iter_cl_phase)
 
         # new episode ending logic: if label is correct or
         # the episode lasted too long
-        if (reward >= 1) or (self.step_counter > self.max_episode_length):
+        if correct_label or (self.step_counter > self.max_episode_length):
             done = True
 
         # Build action-array according to the int/string action.
