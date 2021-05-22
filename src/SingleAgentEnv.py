@@ -118,7 +118,7 @@ class SingleAgentEnv:
         # self.otherinteractions.step(action, self.max_objects, self.obs_label)
         # done = True
 
-        reward = self.reward.get_reward(self, action, visit_history)
+        reward = self.reward.get_reward(self, action, visit_history, n_iter_cl_phase)
 
         # new episode ending logic: if label is correct or
         # the episode lasted too long

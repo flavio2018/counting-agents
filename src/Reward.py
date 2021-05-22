@@ -5,7 +5,8 @@ class Reward:
     def __init__(self, reward_parameters: dict):
         self.parameters = reward_parameters
 
-    def get_reward(self, env, action: int, visit_history: dict) -> float:
+    def get_reward(self, env, action: int, visit_history: dict,
+                   n_iter_cl_phase: int) -> float:
         """Reward function. Currently implementing only label-based reward
         logic, giving positive reward when the action is a label action
         which corresponds to the correct label. We can also give a negative
@@ -41,7 +42,7 @@ class Reward:
             visit_history[current_state_hash] += 1
 
         if self.parameters['time_penalty']:
-            reward -= self.parameters['time_penalty_value']
+            reward -= n_iter_cl_phase*self.parameters['time_penalty_value']
 
         return reward
 
