@@ -20,29 +20,33 @@ from src import utils
 # from fonts.ttf import AmaticSC
 
 
-class SingleAgentEnv:
+class SingleAgentEnv(object):
     """
     This class implements the environment as a whole.
     """
 
-    def __init__(self, agent_params: dict, reward):
-        model = None
-        self.CL = False  # using Curriculum Learning
+    def __init__(self, reward, **kwargs):
+        __slots__ = ('CL', 'max_CL_objects', 'max_episode_objects', 'obs_dim',
+                     'max_episode_length', 'exploration_phase_len',
+                     'generate_random_nobj', 'random_finger_postion')
 
-        # allows fair label comparison in Curriculum Learning:
+        # initialize attributes
+        for attribute in __slots__:
+            if attribute in kwargs:
+                setattr(self, attribute, kwargs[attribute])
+            else:
+                setattr(self, attribute, None)
+
+        # max_CL_objects allows fair label comparison in Curriculum Learning:
         # (when we have CL the agent starts with the possibility
         # to output labels for numerosities greater than the ones
         # it has already seen in the beginning)
-        if 'max_CL_objects' in agent_params:
+        if self.max_CL_objects is not None:
             self.CL = True
-            self.max_CL_objects = agent_params['max_CL_objects']
+        else:
+            self.CL = False
 
-        self.max_objects = agent_params['max_objects']
-        self.obs_dim = agent_params['obs_dim']
-        self.actions_dict = {n: '' for n in range(agent_params['n_actions'])}
-        self.max_episode_length = agent_params['max_episode_length']
-        self.exploration_phase_len = agent_params['exploration_phase_len']
-        self.generate_random_nobj = agent_params['generate_random_nobj']
+        self.actions_dict = {n: '' for n in range(kwargs['n_actions'])}
 
         self.reward = reward
 
@@ -76,7 +80,6 @@ class SingleAgentEnv:
         self.action_vec = np.zeros((len(self.actions_dict), 1))
 
         # Initialize neural network model: maps observation-->action
-        self.model = model
         self.fps_inv = 500  # ms
         self.is_submitted_ext_repr = False
         self.submitted_ext_repr = None
@@ -92,7 +95,6 @@ class SingleAgentEnv:
         self.step_counter += 1
         # TODO: reward when finger on object?
 
-        # action = self.eps_greedy_modified(q_values) # TODO: generalize
         if n_iter_cl_phase < self.exploration_phase_len:
             # follow exploration profiles for the first k iters
             tau = self.get_tau(n_iter_cl_phase, self.exploration_phase_len)
@@ -306,15 +308,19 @@ class FingerLayer:
     This class implements the finger movement part of the environment.
     """
 
-    def __init__(self, layer_dim, env_actions_dict):
+    def __init__(self, layer_dim, env_actions_dict, random_finger_position=False):
         self.layer_dim = layer_dim
+        self.random_finger_position = random_finger_position
         self.fingerlayer = np.zeros((layer_dim, layer_dim))
         self.max_x = layer_dim - 1
         self.max_y = layer_dim - 1
-        self.pos_x = random.randint(0, layer_dim - 1)  # random initial finger position
-        self.pos_y = random.randint(0, layer_dim - 1)
-        self.pos_x = 0  # fixed initial finger position
-        self.pos_y = 0
+
+        if self.random_finger_position:
+            self.pos_x = random.randint(0, layer_dim - 1)  # random initial finger position
+            self.pos_y = random.randint(0, layer_dim - 1)
+        else:
+            self.pos_x = 0  # fixed initial finger position
+            self.pos_y = 0
         self.fingerlayer[self.pos_x, self.pos_y] = 1
 
         actions = ['left', 'right', 'up', 'down']
