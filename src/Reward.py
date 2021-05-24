@@ -1,11 +1,15 @@
 import numpy as np
 
 
-class Reward:
-    def __init__(self, bad_label_punishment=False, curiosity=False, time_penalty=None):
-        self.bad_label_punishment = bad_label_punishment
-        self.curiosity = curiosity
-        self.time_penalty = time_penalty
+class Reward(object):
+    def __init__(self, **kwargs):
+        __slots__ = ('bad_label_punishment', 'curiosity', 'time_penalty')
+
+        for attribute in __slots__:
+            if not attribute in kwargs:
+                setattr(self, attribute, None)
+            else:
+                setattr(self, attribute, kwargs[attribute])
 
     def get_reward(self, env, action: int, visit_history: dict) -> float:
         """Reward function. Currently implementing only label-based reward
