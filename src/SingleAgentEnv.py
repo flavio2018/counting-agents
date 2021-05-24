@@ -26,7 +26,7 @@ class SingleAgentEnv(object):
     """
 
     def __init__(self, reward, **kwargs):
-        __slots__ = ('CL', 'max_CL_objects', 'max_episode_objects', 'obs_dim',
+        __slots__ = ('max_CL_objects', 'max_episode_objects', 'obs_dim',
                      'max_episode_length', 'exploration_phase_len',
                      'generate_random_nobj', 'random_finger_postion')
 
@@ -153,7 +153,7 @@ class SingleAgentEnv(object):
         if self.CL:
             self.obs_label = np.zeros(self.max_CL_objects)
         else:
-            self.obs_label = np.zeros(self.max_objects)
+            self.obs_label = np.zeros(self.max_episode_objects)
         self.obs_label[num_objects - 1] = 1
 
     def generate_observation(self):
@@ -162,9 +162,9 @@ class SingleAgentEnv(object):
         # randomly placed on a 0-grid of shape dim x dim
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
         if self.generate_random_nobj:
-            n_objects = np.random.randint(self.max_objects) + 1
+            n_objects = np.random.randint(self.max_episode_objects) + 1
         else:
-            n_objects = self.max_objects
+            n_objects = self.max_episode_objects
 
         ones_mask = np.random.choice(self.obs.size,
                                      n_objects,
