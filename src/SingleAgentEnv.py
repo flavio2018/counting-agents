@@ -59,8 +59,12 @@ class SingleAgentEnv(object):
         self.ext_repr = ExternalRepresentation(self.obs_dim, self.actions_dict)
 
         # Initialize Finger layers: Single 1 in 0-grid of shape dim x dim
-        self.finger_layer_scene = FingerLayer(self.obs_dim, self.actions_dict)
-        self.finger_layer_repr = FingerLayer(self.obs_dim, self.actions_dict)
+        self.finger_layer_scene = FingerLayer(self.obs_dim,
+                                              self.actions_dict,
+                                              self.random_finger_position)
+        self.finger_layer_repr = FingerLayer(self.obs_dim,
+                                             self.actions_dict,
+                                             self.random_finger_position)
 
         # Fill actions dict empty positions (number labels)
         label = 1
@@ -264,9 +268,12 @@ class SingleAgentEnv(object):
         self.ext_repr = ExternalRepresentation(self.obs_dim, self.actions_dict)
 
         # Initialize Finger layers: Single 1 in 0-grid of shape dim x dim
-        self.finger_layer_scene = FingerLayer(self.obs_dim, self.actions_dict)
-        self.finger_layer_repr = FingerLayer(self.obs_dim, self.actions_dict)
-
+        self.finger_layer_scene = FingerLayer(self.obs_dim,
+                                              self.actions_dict,
+                                              self.random_finger_position)
+        self.finger_layer_repr = FingerLayer(self.obs_dim,
+                                             self.actions_dict,
+                                             self.random_finger_position)
         # reset whole state
         self.build_state()
 
