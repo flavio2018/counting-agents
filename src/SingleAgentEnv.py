@@ -28,7 +28,7 @@ class SingleAgentEnv(object):
     def __init__(self, reward, **kwargs):
         __slots__ = ('max_CL_objects', 'max_episode_objects', 'obs_dim',
                      'max_episode_length', 'exploration_phase_len',
-                     'generate_random_nobj', 'random_finger_postion')
+                     'generate_random_nobj', 'random_finger_position')
 
         # initialize attributes
         for attribute in __slots__:
