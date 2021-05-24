@@ -2,8 +2,10 @@ import numpy as np
 
 
 class Reward:
-    def __init__(self, reward_parameters: dict):
-        self.parameters = reward_parameters
+    def __init__(self, bad_label_punishment=False, curiosity=False, time_penalty=None):
+        self.bad_label_punishment = bad_label_punishment
+        self.curiosity = curiosity
+        self.time_penalty = time_penalty
 
     def get_reward(self, env, action: int, visit_history: dict) -> float:
         """Reward function. Currently implementing only label-based reward
@@ -29,11 +31,11 @@ class Reward:
             if chosen_label == true_label:
                 reward = 1
                 correct_label = True
-            elif self.parameters['bad_label_punishment']:
+            elif self.bad_label_punishment:
                 reward = -.5
 
         # implementing a simple curiosity mechanism
-        if self.parameters['curiosity']:
+        if self.curiosity:
             current_state_hash = env.get_state_hash()
             n_visits = visit_history.get(current_state_hash, 0)
             if n_visits == 0:
@@ -42,8 +44,8 @@ class Reward:
             visit_history.setdefault(current_state_hash, 0)
             visit_history[current_state_hash] += 1
 
-        if self.parameters['time_penalty']:
-            reward -= self.parameters['time_penalty_value']
+        if self.time_penalty is not None:
+            reward -= self.time_penalty
 
         return reward, correct_label
 
