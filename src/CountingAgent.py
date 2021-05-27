@@ -27,7 +27,9 @@ class CountingAgent(nn.Module):
         vis_rep_size: Size of visual representation (should be 10*no_action?)
         action_space_size: Number of actions the agent can take.
     """
-    def __init__(self, input_channels, input_dim, n_kernels, dropout, pool_kernel_size, vis_rep_size=30, action_space_size=3):
+    def __init__(self, input_channels, input_dim, n_kernels,
+                 dropout, pool_kernel_size, vis_rep_size=30,
+                 action_space_size=3):
         
         super().__init__()
         self.input_channels = input_channels

@@ -26,8 +26,8 @@ class SingleAgentEnv(object):
     """
 
     def __init__(self, reward, **kwargs):
-        __slots__ = ('max_CL_objects', 'max_episode_objects', 'obs_dim',
-                     'max_episode_length', 'exploration_phase_len',
+        __slots__ = ('max_CL_objects', 'CL_phases', 'max_episode_objects',
+                     'obs_dim', 'max_episode_length', 'n_episodes_per_phase',
                      'generate_random_nobj', 'random_finger_position')
 
         # initialize attributes
@@ -36,6 +36,9 @@ class SingleAgentEnv(object):
                 setattr(self, attribute, kwargs[attribute])
             else:
                 setattr(self, attribute, None)
+
+        self.max_train_iters = (self.CL_phases * self.n_episodes_per_phase *
+                                self.max_episode_length)
 
         # max_CL_objects allows fair label comparison in Curriculum Learning:
         # (when we have CL the agent starts with the possibility
@@ -99,12 +102,7 @@ class SingleAgentEnv(object):
         self.step_counter += 1
         # TODO: reward when finger on object?
 
-        if n_iter_cl_phase < self.exploration_phase_len:
-            # follow exploration profiles for the first k iters
-            tau = self.get_tau(n_iter_cl_phase, self.exploration_phase_len)
-        else:
-            tau = 0  # then choose according to the q-values only
-
+        tau = self.get_tau(n_iter_cl_phase, self.max_train_iters)
         action = self.softmax_action_selection(q_values, tau)
 
         if action in self.finger_layer_scene.action_codes:
@@ -205,8 +203,6 @@ class SingleAgentEnv(object):
         return action
 
     def eps_greedy_modified(self, q_values, eps=.1):
-        # TODO: eps not-hardcoded
-
         n_actions = len(self.actions_dict)
 
         sample = random.random()
