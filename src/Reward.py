@@ -32,11 +32,14 @@ class Reward(object):
             chosen_label = int(env.actions_dict[action])
             true_label = np.argmax(env.obs_label) + 1
 
-            if chosen_label == true_label:
+            if chosen_label == true_label and env.first_label_output:
                 reward = 1
                 correct_label = True
-            elif self.bad_label_punishment:
+
+            elif (chosen_label != true_label) and self.bad_label_punishment:
                 reward = -.5
+
+            env.first_label_output = False
 
         # implementing a simple curiosity mechanism
         if self.curiosity:
@@ -62,7 +65,5 @@ class Reward(object):
 
         # if self.obs[finger_position] == 1:
         # reward += 0.1 # TODO: diminishing reward?
-
-        # TODO: reward diminishing with time
 
         # TODO: reward showing how to create repr. for small quantities

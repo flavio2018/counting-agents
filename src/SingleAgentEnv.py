@@ -94,6 +94,11 @@ class SingleAgentEnv(object):
         # Initialize counter of steps in the environment with this scene
         self.step_counter = 0
 
+        # Initialize flag for label output
+        # the agent gets positive reward only the first time
+        # it outputs a label and it is correct
+        self.first_label_output = True
+
     def step(self, q_values, n_iter_cl_phase, visit_history):
         # Define how action interacts with environment:
         # e.g. with observation space and external representation
@@ -275,6 +280,11 @@ class SingleAgentEnv(object):
 
         # reset counter of steps in an environment with a given scene
         self.step_counter = 0
+
+        # reset flag for first label output
+        # the agent gets positive reward only the first time
+        # it outputs a label and it is correct
+        self.first_label_output = True
 
         return torch.Tensor(self.state)
 
