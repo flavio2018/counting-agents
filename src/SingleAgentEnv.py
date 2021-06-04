@@ -174,7 +174,7 @@ class SingleAgentEnv(object):
         else:
             n_objects = self.max_episode_objects
 
-        if self.random_objects_postions:
+        if self.random_objects_positions:
             ones_mask = np.random.choice(self.obs.size,
                                          n_objects,
                                          replace=False)
