@@ -51,7 +51,7 @@ class Reward(object):
             visit_history.setdefault(current_state_hash, 0)
             visit_history[current_state_hash] += 1
 
-        if self.time_penalty is not None:
+        if self.time_penalty:
             reward -= self.time_penalty
 
         return reward, correct_label
