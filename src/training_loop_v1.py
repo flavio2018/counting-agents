@@ -59,7 +59,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             next_state, reward, done, correct_label = env.step(q_values, n_iter_cl_phase, visit_history)
             
             log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
-            log.add_scalar(f'1st_state_q_value_{run_timestamp}', q_values[0], n_iter)
+            first_q_value = q_values[0,0].item()
+            log.add_scalar(f'1st_state_q_value_{run_timestamp}', first_q_value, n_iter)
             
             reward = torch.tensor([reward])  # , device=device) TODO: CUDA
             
