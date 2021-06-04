@@ -28,7 +28,8 @@ class SingleAgentEnv(object):
     def __init__(self, reward, **kwargs):
         __slots__ = ('max_CL_objects', 'CL_phases', 'max_episode_objects',
                      'obs_dim', 'max_episode_length', 'n_episodes_per_phase',
-                     'generate_random_nobj', 'random_finger_position')
+                     'generate_random_nobj', 'random_objects_positions',
+                     'random_finger_position')
 
         # initialize attributes
         for attribute in __slots__:
@@ -173,9 +174,13 @@ class SingleAgentEnv(object):
         else:
             n_objects = self.max_episode_objects
 
-        ones_mask = np.random.choice(self.obs.size,
-                                     n_objects,
-                                     replace=False)
+        if self.random_objects_postions:
+            ones_mask = np.random.choice(self.obs.size,
+                                         n_objects,
+                                         replace=False)
+        else:
+            ones_mask = np.array(range(n_objects))
+
         self.obs.ravel()[ones_mask] = 1
 
     def softmax_action_selection(self, q_values, temperature):
