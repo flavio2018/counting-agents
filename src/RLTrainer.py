@@ -4,179 +4,214 @@ from collections import OrderedDict
 import pickle
 import numpy as np
 import torch
-import gym
-import sys
-
-from cs285.infrastructure.utils import *
-from cs285.infrastructure.logger import Logger
-
-from cs285.agents.dqn_agent import DQNAgent
-from cs285.envs.kuka_diverse_object_gym_env import KukaDiverseObjectEnv
-
+from MultiAgentEnvironment import MultiAgentEnvironment
+from SingleAgent import SingleRLAgent
+from tensorboardX import SummaryWriter
+import timeit
+import pytorch_utils as ptu
+from datetime import timedelta
+from ExperimentSetups import *
+from DQN_Agent_Single import DQN_Agent_Single
+from DQN_Agent_Double import DQN_Agent_Double
 
 
 class RL_Trainer(object):
 
     def __init__(self, params):
 
-        #############
-        ## INIT
-        #############
-
         # Get params, create logger, create TF session
         self.params = params
-        self.logger = Logger(self.params['logdir'])
+        #self.logger = Logger(self.params['logdir'])
+        #single_or_multi_agent = AgentSetupDict[self.params['Agent_Setup']].single_or_multi_agent
+        single_or_multi_agent = self.params['single_or_multi_agent']
 
-        #############
-        ## ENV
-        #############
-        self.env = OwnEnv()
+        if(single_or_multi_agent == 'single'):
+            self.env = SingleRLAgent(params['agent_params'])
+            self.agent = DQN_Agent_Single(self.env, self.params['agent_params'])
+        elif(single_or_multi_agent == 'multi'):
+            self.env = MultiAgentEnvironment(params['agent_params'])
+            self.agent = DQN_Agent_Double(self.env, self.params['agent_params'])
+
         self.env.reset()
 
         self.mean_episode_reward = -float('nan')
         self.best_mean_episode_reward = -float('inf')
 
-        # Observation and action sizes
-        ob_dim = self.env.observation_space.shape if img else self.env.observation_space.shape[0]
-        ac_dim = self.env.action_space.n if discrete else self.env.action_space.shape[0]
-        print("ob_dim: ", ob_dim)
-        self.params['agent_params']['ac_dim'] = ac_dim
-        self.params['agent_params']['ob_dim'] = ob_dim
-
-
-        #############
-        ## AGENT
-        #############
-        agent_class = self.params['agent_class']
-        self.agent = agent_class(self.env, self.params['agent_params'])
-
-    def run_training_loop(self, n_iter=None, collect_policy=None, eval_policy=None,
-                          buffer_name=None,
-                          initial_expertdata=None, relabel_with_expert=False,
-                          start_relabel_with_expert=1, expert_policy=None):
-        num_iterations = self.agent.params['num_iterations'] #1000
+    def run_training_loop(self, num_iterations):
+        print("Inside run_training_loop")
+        print("Writer for Tensorboard on: ", self.params['logdir'])
         writer = SummaryWriter(self.params['logdir'])
-        summed_q_value_loss1, summed_value_loss, summed_policy_loss, summed_predicted_new_q_value = 0,0,0,0
+        writingOn = "Experiment_Parameters"
+        writer_text = str(self.params).replace(',', '<br/>')
+        writer.add_text(writingOn, writer_text, 0)
+        writer_text = str(self.agent.env.experiment_specific_setup.reward_dict).replace(',', '<br/>')
+        writer.add_text(writingOn, writer_text, 0)
+        summed_loss = 0
         start_time = timeit.default_timer()
-
         log_loss_frequ = self.params['log_loss_frequ']
-        n_test_episodes = self.params['n_episodes_per_eval']
+        best_mean_reward = 0.0
+        itr = 0
 
-        for itr in range(num_iterations):
-
+        while(itr < num_iterations):
+            if(itr % self.params['collect_every_n_iterations'] == 0):
+                _ = self.run_episodes_with_agent(train_episode=itr, writer=None, collect=True, eval=False, n_episodes=self.params['collect_n_episodes_per_itr'])
             if(itr % self.params['eval_every_n_iterations'] == 0):
-                print("Evaluating on training set ... ")
-                mean_reward_train = self.eval_agent(writer, itr, isTest=False, n_test_episodes=self.params['n_episodes_per_eval'])
-                print("Evaluating on test set ... ")
-                mean_reward_test = self.eval_agent(writer, itr, isTest=True, n_test_episodes=self.params['n_episodes_per_eval'])
-                print('Mean {dataset} score: {mean_reward}'.format(dataset='train', mean_reward=mean_reward_train))
-                print('Mean {dataset} score: {mean_reward}'.format(dataset='test', mean_reward=mean_reward_test))
+                 print("Evaluating on training set ... ")
+                 mean_reward_train = self.run_episodes_with_agent(train_episode=itr, writer=writer, collect=False, eval=True, n_episodes=self.params['eval_n_episodes_per_itr'])
+                 print('MEAN {dataset} SCORE: {mean_reward}'.format(dataset='train', mean_reward=mean_reward_train))
+                 print("Epsilon: ", self.agent.eps)
+                 if(mean_reward_train > best_mean_reward):
+                     model_path = self.params['logdir'] + '/best_model.pt'
+                     torch.save(self.agent.policy_net.state_dict(), model_path)
+                     best_mean_reward = mean_reward_train
 
-                if (writer is not None):
-                    writingOn = 'rewards/avg_train_reward_over_episodes'
-                    writer.add_scalar(writingOn, mean_reward_train, itr)
+            #for i in range(50):
+            #    loss_i = self.agent.optimize_model()
+            #    print(loss_i)
+            loss = self.agent.optimize_model()
 
-                    writingOn = 'rewards/avg_test_reward_over_episodes'
-                    writer.add_scalar(writingOn, mean_reward_test, itr)
-
-            q_value_loss1, value_loss, policy_loss, predicted_new_q_value = self.agent.optimize_model()
-
-            if(q_value_loss1 is not None):
-                #summed_loss += loss
-                summed_q_value_loss1 += q_value_loss1
-                summed_value_loss += value_loss
-                summed_policy_loss +=policy_loss
-                summed_predicted_new_q_value += predicted_new_q_value.mean()
-
+            if(loss is not None):
+                summed_loss += loss
                 # LOG
-                if(writer is not None and itr % log_loss_frequ == 0):
-                    writingOn = 'losses/avg_q_value_loss_over_past_iterations'
-                    writer.add_scalar(writingOn, summed_q_value_loss1 / log_loss_frequ, itr)
-                    writingOn = 'losses/avg_value_loss_over_past_iterations'
-                    writer.add_scalar(writingOn, summed_value_loss / log_loss_frequ, itr)
-                    writingOn = 'losses/avg_policy_loss_over_past_iterations'
-                    writer.add_scalar(writingOn, summed_policy_loss / log_loss_frequ, itr)
-                    writingOn = 'q_values/avg_predicted_new_q_value_over_past_iterations'
-                    writer.add_scalar(writingOn, summed_predicted_new_q_value / log_loss_frequ, itr)
+            if(writer is not None and itr % log_loss_frequ == 0):
+                print("Average loss: ", summed_loss / log_loss_frequ, itr)
+                writingOn = 'metrics/avg_q_value_loss_over_past_iterations'
+                writer.add_scalar(writingOn, summed_loss / log_loss_frequ, itr)
+                summed_loss = 0
 
-                    summed_q_value_loss1, summed_value_loss, summed_policy_loss, summed_predicted_new_q_value = 0, 0, 0, 0
+            if (itr % self.params['eval_every_n_iterations'] == 0):
+                if(mean_reward_train>0.98 and self.params['curriculum_learning'] and self.env.max_objects <= self.params['max_max_objects']):
+                    print("===========================")
+                    print("===========================")
+                    print("TRAIN FROM 1 TO ", self.env.max_objects + 1)
+                    print("===========================")
+                    print("===========================")
+                    self.env.max_objects += 1
 
-        final_reward = self.eval_agent(writer, itr, isTest=True, n_test_episodes=200)
+            itr += 1
+
+        self.env.max_objects -= 1
+        final_reward = self.run_episodes_with_agent(writer=writer, collect=False, eval=True, n_episodes=self.params['eval_n_episodes_per_itr'], final=True)
         print('Average Score: {:.2f}'.format(final_reward))
+        # Save model
+        model_path = self.params['logdir'] + '/model.pt'
+        torch.save(self.agent.policy_net.state_dict(), model_path)
+        print("Model saved in: ", model_path)
+
         elapsed = timeit.default_timer() - start_time
         print("Elapsed time: {}".format(timedelta(seconds=elapsed)))
         writer.close()
         print("DONE")
 
-
-    def eval_agent(self, writer=None, train_episode=0, isTest=False, n_test_episodes=50):
+    def run_episodes_with_agent(self, writer=None, train_episode=0, collect=False, eval=True, n_episodes=50, final=False):
         total_rewards = []
         summed_rewards = 0
-
         env = self.agent.env
-        env.isTest = isTest
-        STACK_SIZE = self.agent.params['STACK_SIZE']
+        ith_image = 0
 
-
-        for i_episode in range(n_test_episodes):
-            # Initialize the environment and state
-            #state = torch.from_numpy(env.reset())
-            env.reset()
-            state = self.agent.get_screen()
-            stacked_states = collections.deque(STACK_SIZE * [state], maxlen=STACK_SIZE)
-
-            #stacked_states = [state]
-            #episode_transition_memory = []
+        for i_episode in range(n_episodes):
+            state = env.reset()
             t_sofar = 0
-            for t in count():
-                t_sofar += 1
-                stacked_states_t = torch.cat(tuple(stacked_states), dim=1)
-                #stacked_states_t = state
-                # Select and perform an action
-                action = self.agent.select_action(stacked_states_t, i_episode, t, deterministic=isTest)
-                action_ext = np.append(action, 0.0)
-                _, reward, done, _ = env._step_continuous(action_ext)
-                #next_state, reward, done, _ = env.step(action_ext)
-                reward = torch.tensor([reward], dtype=torch.float32, device=self.agent.device)
+            done = False
+            episode_rewards = []
+            actions_during_episode = []
 
-                # Observe new state
-                next_state = self.agent.get_screen()
-                if not done:
-                    next_stacked_states = stacked_states
-                    next_stacked_states.append(next_state)
-                    next_stacked_states_t = torch.cat(tuple(next_stacked_states), dim=1)
-                else:
-                    next_stacked_states_t = None
+            while not done:
+                t_sofar += 1
+                action = self.agent.select_action(state, train_episode, deterministic=eval)
+                actions_during_episode.append(action)
+                next_state, reward, done, _ = env.step(action)
+                episode_rewards.append(reward)
 
                 # Store the transition in memory
-                if(self.params['on_policy'] == True and isTest == False):
-                    self.agent.memory.push(stacked_states_t, torch.tensor([action], device=self.agent.device), next_stacked_states_t, reward, torch.tensor([t], dtype=torch.float32, device=self.agent.device))
-                    #episode_transition_memory.append([stacked_states_t, torch.tensor([action], device=self.agent.device), next_stacked_states_t, reward, torch.tensor([t], dtype=torch.float32, device=self.agent.device)])
-                # Log example actions:
-                if(writer is not None and isTest == False and i_episode < 2):
-                    for a_i in range(self.agent.n_actions):
-                        writingOn = 'example_actions_' + str(i_episode) + '/' + str(a_i)
-                        writer.add_scalar(writingOn, action[a_i], train_episode)
+                if(collect == True):
 
-                # Move to the next state
-                stacked_states = next_stacked_states
+                    state_for_memory, next_state_for_memory, action_for_memory, reward = self.agent.convert_to_memory_compatible_format(state, next_state, action, reward)
+                    self.agent.memory.push(state_for_memory, action_for_memory, next_state_for_memory, reward)
+                # Log example actions:
+                #if(writer is not None and isTest == False and i_episode < 2):
+                #    for a_i in range(self.agent.n_actions):
+                #        writingOn = 'example_actions_' + str(i_episode) + '/' + str(a_i)
+                #        writer.add_scalar(writingOn, action[a_i], train_episode)
+
+                state = next_state
 
                 if done:
-                    reward = reward.cpu().numpy().item()
+                    reward = sum(episode_rewards)
                     summed_rewards += reward
                     total_rewards.append(reward)
 
-                    #if (self.params['on_policy'] == True and isTest == False):
-                    #    for t_i in range(t_sofar):
-                    #        self.agent.memory.push(episode_transition_memory[t_i][0],episode_transition_memory[t_i][1],episode_transition_memory[t_i][2],episode_transition_memory[t_i][3],episode_transition_memory[t_i][4])
+                if(eval and i_episode==0):
+                    if(env.experiment_specific_setup.single_or_multi_agent == 'single'):
+                        actions_during_episode.append(env.all_actions_dict[action])
+                    if (env.experiment_specific_setup.single_or_multi_agent == 'multi'):
+                        print("act ", t_sofar, ": ", [env.agents[0].all_actions_dict[action_i] for action_i in action])
+            if (env.experiment_specific_setup.single_or_multi_agent == 'single'):
+                if (eval and i_episode == 0):
+                    print("Acts: ", actions_during_episode)
 
-                    break
+            if(eval and writer is not None and final):
+                if(i_episode < 5):
+                    writingOn = 'episodes_final_states/' + str(i_episode)
+                    writer.add_image(writingOn, np.asarray( env.render() ).astype(np.uint8).transpose([2,0,1]))
+                writingOn = 'example_representations_' + str(env.agents[0].n_objects)  + '/' + str(ith_image)
+                ith_image += 1
+                writer.add_image(writingOn, env.agents[0].ext_repr.externalrepresentation.reshape(1,env.agents[0].obs_dim, env.agents[0].obs_dim))
 
+        mean_reward = summed_rewards/n_episodes
 
-
-        mean_reward = summed_rewards/n_test_episodes
-
-        env.isTest = False
+        if(eval and writer is not None ):
+            writingOn = 'metrics/mean_rewards'
+            writer.add_scalar(writingOn, mean_reward, train_episode)
 
         return mean_reward
 
+
+def demonstrate_model(model, env, collect=False, eval=True, n_objects=None):
+    total_rewards = []
+    summed_rewards = 0
+
+    states = env.reset(n_objects)
+    states = torch.stack([torch.unsqueeze(ptu.from_numpy(state), dim=0) for state in states]).transpose(0, 1)
+    t_sofar = 0
+    done = False
+
+    actions_during_episode = []
+    img_list = []
+    img_list.append(env.render(display_id="model_demo"))
+
+    while not done:
+        t_sofar += 1
+        action = self.agent.select_action(state, train_episode, deterministic=eval)
+        actions_during_episode.append(action)
+        next_state, reward, done, _ = env.step(action)
+
+        episode_rewards.append(reward)
+        # Convert numpy objects to tensors for saving in memory
+        reward = torch.tensor([ptu.from_numpy(np.array(reward))])
+        action = ptu.from_numpy(np.array(action)).unsqueeze(0).unsqueeze(1).type(torch.int64)
+        if next_state is not None:
+            next_state = ptu.from_numpy(next_state)
+
+        # Store the transition in memory
+        if (collect == True):
+            self.agent.memory.push(state.unsqueeze(0), action, next_state.unsqueeze(0), reward)
+        # Log example actions:
+        if (writer is not None and isTest == False and i_episode < 2):
+            for a_i in range(self.agent.n_actions):
+                writingOn = 'example_actions_' + str(i_episode) + '/' + str(a_i)
+                writer.add_scalar(writingOn, action[a_i], train_episode)
+
+        # Move to the next state
+        state = next_state
+
+        if done:
+            reward = sum(episode_rewards)
+            summed_rewards += reward
+            total_rewards.append(reward)
+
+        if (eval and i_episode == 0):
+            print("act ", t_sofar, ": ", env.all_actions_dict[int(action.cpu().numpy().astype(int))])
+        img_list.append(env.render(display_id="model_demo"))
+        time.sleep(2)
+    return img_list
