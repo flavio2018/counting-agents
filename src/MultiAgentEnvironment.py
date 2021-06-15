@@ -14,16 +14,20 @@ class MultiAgentEnvironment():
     e.g. env.action=[agent_1_action, agent_2_action],
          env.state=[agent_1_state, agent_2_state],
     '''
-    def __init__(self, params):
+    def __init__(self, params, max_objects=None):
 
         self.params = params
         #self.experiment_specific_setup = AgentSetupDict[self.params['Agent_Setup']](self.params)
-        self.max_objects = self.params['max_objects']
+        self.max_objects = max_objects if max_objects is not None else self.params['max_objects']
         self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation']) if 'max_episode_length' not in self.params else self.params['max_episode_length']
         self.experiment_specific_setup = ExperimentSetup(params)
 
         print("Working with max ", self.max_objects, " objects")
         self.check_reward = True
+
+        agent_1 = SingleRLAgent(self.params, n_objects=max_objects)
+        agent_2 = SingleRLAgent(self.params, n_objects=max_objects)
+        self.agents = [agent_1, agent_2]
 
         self.reset()
 
@@ -51,8 +55,13 @@ class MultiAgentEnvironment():
             self.agents[0].fingerlayer.fingerlayer = 0.5 * np.ones((self.agents[0].obs_dim, self.agents[0].obs_dim))
             self.agents[1].fingerlayer.fingerlayer = 0.5 * np.ones((self.agents[1].obs_dim, self.agents[1].obs_dim))
 
-        self.agents[0].ext_repr_other = self.agents[1].ext_repr.externalrepresentation
-        self.agents[1].ext_repr_other = self.agents[0].ext_repr.externalrepresentation
+        if (self.timestep == self.max_episode_length):
+            self.agents[0].ext_repr_other = self.agents[1].ext_repr.externalrepresentation
+            self.agents[1].ext_repr_other = self.agents[0].ext_repr.externalrepresentation
+        else:
+            self.agents[0].ext_repr_other = 0.5 * np.ones((self.agents[0].obs_dim, self.agents[0].obs_dim))
+            self.agents[1].ext_repr_other = 0.5 * np.ones((self.agents[1].obs_dim, self.agents[0].obs_dim))
+
         self.agents[0].experiment_specific_setup.update_state(self.agents[0])
         self.agents[1].experiment_specific_setup.update_state(self.agents[1])
 
@@ -74,16 +83,19 @@ class MultiAgentEnvironment():
         if(n_objects is None):
             n_objects = np.random.choice(n_range, 2, replace=True)
 
-        agent_1 = SingleRLAgent(self.params, n_objects=n_objects[0])
-        agent_2 = SingleRLAgent(self.params, n_objects=n_objects[1])
-        self.agents = [agent_1, agent_2]
+        #agent_1 = SingleRLAgent(self.params, n_objects=n_objects[0])
+        #agent_2 = SingleRLAgent(self.params, n_objects=n_objects[1])
+        #self.agents = [agent_1, agent_2]
+        self.agents[0].reset(n_objects=n_objects[0])
+        self.agents[1].reset(n_objects=n_objects[1])
+
         self.n_agents = len(self.agents)
         self.states = [agent.state for agent in self.agents]
         self.actions = None
         self.time_to_give_an_answer = False
         self.done = False
         self.timestep = 0
-        self.action_dim = agent_1.action_dim
+        self.action_dim = self.agents[0].action_dim
 
 
         self.agent_0_gave_answer_already = False
@@ -143,7 +155,13 @@ if __name__ == '__main__':
 
 
 def calc_max_episode_length(n_objects, observation):
-    if(observation == 'spatial'):
-        return 2*n_objects
-    elif(observation == 'temporal'):
-        return 2*n_objects
+    if (observation == 'spatial'):
+        return 1 * n_objects - 1
+    elif (observation == 'temporal'):
+        if(n_objects<=3):
+            return 1*n_objects+1
+        big_timestep_range_from_n = 5
+        max_time_length = min(big_timestep_range_from_n - 1, n_objects) * 2 # + max(0,max_objects-big_timestep_range_from_n)*3
+        if (n_objects >= big_timestep_range_from_n):
+            max_time_length += (n_objects - big_timestep_range_from_n + 1) * 3
+        return max_time_length

@@ -21,16 +21,23 @@ class FC(nn.Module):
         return x
 
 class CNN(nn.Module):
-    def __init__(self, in_channels, num_actions):
+    def __init__(self, in_channels, num_actions, example_input=None):
         super(CNN, self).__init__()
         self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=2, kernel_size=3, stride=1, padding=1)
         self.conv2 = nn.Conv2d(in_channels=2, out_channels=4, kernel_size=3, stride=1)
         #self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
 
-        self.fc1 = nn.Linear(in_features=16, out_features=512)
+        if(example_input is not None):
+            x = self.conv1(torch.from_numpy(example_input).unsqueeze(0).float())
+            x = self.conv2(x)
+            input_dim = x.size().numel()
+        else:
+            input_dim = in_channels * 4 * 4
+        #input_dim = conv_output_shape((3,3), kernel_size=1, stride=1, pad=0, dilation=1)
+        self.fc1 = nn.Linear(in_features=input_dim, out_features=512)  #512
         self.fc2 = nn.Linear(in_features=512, out_features=num_actions)
 
-        input_dim = in_channels*4*4
+
         self.fc3 = nn.Linear(in_features=input_dim, out_features=num_actions)
 
         self.relu = nn.ReLU()
@@ -48,9 +55,9 @@ class CNN(nn.Module):
         return x
 
 class N_Concat_CNNs(nn.Module):
-    def __init__(self, in_channels, num_actions, shared_policy=False):
+    def __init__(self, in_channels, num_actions, shared_policy=False, example_input=None):
         super(N_Concat_CNNs, self).__init__()
-        self.CNN_1 = CNN(in_channels, num_actions)
+        self.CNN_1 = CNN(in_channels, num_actions, example_input=example_input[0])
         #self.CNN_2 = CNN(in_channels, num_actions)
         #for params in self.CNN_2.parameters():
         #    params.requires_grad = False
@@ -101,3 +108,12 @@ class Dueling_DQN(nn.Module):
 
         x = val + adv - adv.mean(1).unsqueeze(1).expand(x.size(0), self.num_actions)
         return x
+
+
+def conv_output_shape(h_w, kernel_size=1, stride=1, pad=0, dilation=1):
+    from math import floor
+    if type(kernel_size) is not tuple:
+        kernel_size = (kernel_size, kernel_size)
+    h = floor( ((h_w[0] + (2 * pad) - ( dilation * (kernel_size[0] - 1) ) - 1 )/ stride) + 1)
+    w = floor( ((h_w[1] + (2 * pad) - ( dilation * (kernel_size[1] - 1) ) - 1 )/ stride) + 1)
+    return h, w

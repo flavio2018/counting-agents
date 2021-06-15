@@ -6,9 +6,7 @@ References:
 """
 
 import torch
-
 from torch import nn
-
 
 class HadamardProduct(nn.Module):
     """A Hadamard product layer.
@@ -22,4 +20,4 @@ class HadamardProduct(nn.Module):
         self.bias = nn.Parameter(torch.empty(*shape))
            
     def forward(self, x):
-        return x * self.weights + self.bias
+        return x * self.weights

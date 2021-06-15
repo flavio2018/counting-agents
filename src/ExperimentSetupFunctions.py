@@ -4,15 +4,19 @@ import random
 def reward_done_function_classify(reward_dict, agents):
     reward = 0.0
     if (agents.timestep <= agents.max_episode_length):
-        for agent in agents.agents:
-            if (agent.all_actions_dict[np.where(agent.action==1)[0][0]] in agent.ext_repr.actions or Is_agent_moved(agent)):
-                reward += reward_dict['moved_or_mod_ext']
-            if (Is_agent_said_number(agent)):
-                reward += reward_dict['said_number_before_last_time_step']
+        if(agents.params['observation']=='temporal'):
+            reward += reward_interaction_during_events(reward_dict, agents)
+        if (agents.params['observation'] == 'spatial'):
+            for agent in agents.agents:
+                if (agent.all_actions_dict[np.where(agent.action == 1)[0][0]] in agent.ext_repr.actions or Is_agent_moved(agent)):
+                    reward += reward_dict['moved_or_mod_ext']
+                # Punish answering before answer time
+                if (Is_agent_did_action(agent, 'larger') or Is_agent_did_action(agent, 'smaller')):
+                    reward += reward_dict['gave_answer_before_answer_time']
     else:
         first_said_correct = False
         second_said_correct = False
-        agent_0, agent_1  = agents.agents[0], agents.agents[1]
+        agent_0, agent_1 = agents.agents[0], agents.agents[1]
         if Is_agent_did_action(agent_0, str(agent_1.n_objects)):
             first_said_correct = True
             reward += reward_dict['main_reward']/2.0
@@ -38,19 +42,23 @@ def reward_done_function_comparison(reward_dict, agents):
             if (Is_agent_did_action(agent, 'larger') or  Is_agent_did_action(agent, 'smaller')):
                 reward += reward_dict['gave_answer_before_answer_time']
     else:
-        first_larger = False
-        if (agents.agents[0].n_objects > agents.agents[1].n_objects):
-            first_larger = True
-        agent_0_answered_larger = Is_agent_did_action(agents.agents[0], 'larger')
-        agent_0_answered_smaller = Is_agent_did_action(agents.agents[0], 'smaller')
-        agent_1_answered_larger = Is_agent_did_action(agents.agents[1], 'larger')
-        agent_1_answered_smaller = Is_agent_did_action(agents.agents[1], 'smaller')
-
-
-        if(agent_0_answered_larger is first_larger and agent_0_answered_smaller is not first_larger):
-            if(agent_1_answered_larger is not first_larger and agent_1_answered_smaller is first_larger):
+        if(agents.agents[0].n_objects == agents.agents[1].n_objects):
+            if(Is_agent_did_action(agents.agents[0], 'equal') and Is_agent_did_action(agents.agents[1], 'equal')):
                 reward = reward_dict['main_reward']
                 agents.done = True
+        else:
+            first_larger = False
+            if (agents.agents[0].n_objects > agents.agents[1].n_objects):
+                first_larger = True
+            agent_0_answered_larger = Is_agent_did_action(agents.agents[0], 'larger')
+            agent_0_answered_smaller = Is_agent_did_action(agents.agents[0], 'smaller')
+            agent_1_answered_larger = Is_agent_did_action(agents.agents[1], 'larger')
+            agent_1_answered_smaller = Is_agent_did_action(agents.agents[1], 'smaller')
+
+            if(agent_0_answered_larger is first_larger and agent_0_answered_smaller is not first_larger):
+                if(agent_1_answered_larger is not first_larger and agent_1_answered_smaller is first_larger):
+                    reward = reward_dict['main_reward']
+                    agents.done = True
 
     return reward, agents.done
 
@@ -67,6 +75,33 @@ def reward_done_function_reproduce(reward_dict, agent):
 
     return reward, agent.done
 
+
+
+def reward_interaction_during_events(reward_dict, agents):
+
+        reward = 0.0
+        for agent in agents.agents:
+            if(agents.params['observation']=='temporal'):
+                if (agent.all_actions_dict[np.where(agent.action==1)[0][0]] in agent.ext_repr.actions):
+                    if((agent.timestep-1) in agent.event_timesteps):
+                        reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+                    else:
+                        reward -= reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+                if ((agent.timestep-1) not in agent.event_timesteps):
+                    if(Is_agent_moved(agent)):
+                        reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length)
+                    else:
+                        reward -= reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+                if (Is_agent_said_number(agent)):
+                    reward += reward_dict['said_number_before_last_time_step']
+
+        return reward
+
+
+
+
+
+
 def obs_reset_function_spatial(agent):
     # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
     agent.obs = np.zeros((agent.obs_dim, agent.obs_dim))
@@ -76,7 +111,7 @@ def obs_reset_function_empty(agent):
     # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
     agent.obs = np.zeros((agent.obs_dim, agent.obs_dim))
     agent.default_obs = agent.obs
-    agent.event_timesteps = random.sample(range(1, agent.max_episode_length-1), agent.n_objects)
+    agent.event_timesteps =  calc_event_timesteps(agent.n_objects, max_episode_length=agent.max_episode_length) #
     agent.event_obs = np.zeros((agent.obs_dim, agent.obs_dim))
     middle = agent.obs_dim//2
     for x in range(middle - 1, middle+1):
@@ -159,3 +194,25 @@ def Is_agent_said_number(agent):
         if Is_agent_did_action(agent, str(n_i + 1)):
             agent.said_number = True
     return agent.said_number
+
+
+def calc_event_timesteps(n_objects, max_episode_length=None):
+    if(n_objects<=3):
+        return random.sample(range(1, max_episode_length), n_objects)
+    big_timestep_range_from_n = 5
+    small_timestep_range = [1, 2]
+    big_timestep_range = [2, 3]
+    timestep_range = small_timestep_range
+    event_timesteps = []
+    t_n = 0
+
+    for n in range(1, n_objects + 1):
+        if (n == big_timestep_range_from_n):
+            timestep_range = big_timestep_range
+        t_n += random.randint(timestep_range[0], timestep_range[1])
+        event_timesteps.append(t_n)
+    return event_timesteps
+
+
+
+

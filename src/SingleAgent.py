@@ -20,7 +20,7 @@ class SingleRLAgent():
     """
     def __init__(self, agent_params, n_objects=None):
         self.params = agent_params
-        self.max_objects = self.params['max_objects']
+        self.max_objects = n_objects if n_objects is not None else self.params['max_objects']
         self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation']) if 'max_episode_length' not in self.params else self.params['max_episode_length']
         self.experiment_specific_setup = ExperimentSetup(agent_params) #AgentSetupDict[self.params['Agent_Setup']](agent_params)
         self.IsPartOfMultiAgents = True if agent_params['single_or_multi_agent'] == 'multi' else False
@@ -30,7 +30,6 @@ class SingleRLAgent():
 
 
         model=None
-        self.max_objects = agent_params['max_objects']
         self.n_objects = random.randint(1, self.max_objects) if(n_objects is None) else n_objects
         self.obs_dim = agent_params['obs_dim']
         
@@ -57,24 +56,19 @@ class SingleRLAgent():
         self.is_submitted_ext_repr = False
         self.submitted_ext_repr = None
 
-        self.reset()
+        self.reset(self.n_objects)
 
-
-    #def update_state(self):
-    #    self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation, self.ext_repr_other])
-    #    return self.state
 
     def step(self, action):
         self.timestep += 1
-        # Define how actiocn interacts with environment: e.g. with observation space and external representation
-        # self.obs.step(action_on_obs[action]) # no interaction with the observation space yet
+
+        if(type(action) != str):
+            action = self.all_actions_dict[action]
+
         if(action in self.fingerlayer.actions):
             self.fingerlayer.step(action)
-
-        # For action on external representation:
         if(action in self.ext_repr.actions):
             self.ext_repr.step(action, self)
-
         if(action in self.otherinteractions.actions):
             if (action == 'submit'):
                 self.is_submitted_ext_repr = True
@@ -85,7 +79,7 @@ class SingleRLAgent():
                 pass
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
-        # manually by str/int. When trained action-array is input.
+        # manually by str/int.
         self.action = np.zeros(self.action_dim)
         self.action[self.all_actions_dict_inv[action]] = 1
         self.state = self.experiment_specific_setup.update_state(self)
@@ -121,7 +115,6 @@ class SingleRLAgent():
         self.action_img = utils.add_grid_lines(self.action_img, np.reshape(self.action, (-1, 1)))
         self.action_img = utils.annotate_nodes(self.action_img, self.all_actions_list)
         self.action_img = utils.annotate_below(self.action_img, "Action")
-
 
         self.ext_repr_img = Image.fromarray(self.ext_repr.externalrepresentation*255).resize( (img_height,img_height), resample=0)
         self.ext_repr_img = utils.add_grid_lines(self.ext_repr_img, self.ext_repr.externalrepresentation)
@@ -164,7 +157,7 @@ class SingleRLAgent():
         self.done = False
         self.timestep = 0
         self.agent_0_gave_answer_already = False
-        self.max_episode_length = calc_max_episode_length(self.n_objects, self.params['observation']) if 'max_episode_length' not in self.params else self.params['max_episode_length']
+        #self.max_episode_length = calc_max_episode_length(self.n_objects, self.params['observation']) if 'max_episode_length' not in self.params else self.params['max_episode_length']
 
         return ptu.from_numpy(self.state)
 
@@ -330,15 +323,16 @@ class Abacus():
         :param current_row: row in which finger is currently positioned
         :return:
         '''
+
         current_row = agent.fingerlayer.pos_y
         if(action == 'move_token_left'):
             self.token_pos[current_row] = (self.token_pos[current_row] - 1) % self.dim
         if(action == 'move_token_right'):
             self.token_pos[current_row] = (self.token_pos[current_row] + 1) % self.dim
 
-        self.externalrepresentation = np.zeros((agent.obs_dim, agent.obs_dim))
-        for rowy in range(self.dim):
-            self.externalrepresentation[self.token_pos[rowy], rowy] = 1
+        for col in range(self.dim):
+            self.externalrepresentation[col, current_row] = 0
+        self.externalrepresentation[self.token_pos[current_row], current_row] = 1
 
 
 
@@ -353,11 +347,12 @@ class OtherInteractions():
                 0: 'submit',
                 1: 'larger',
                 2: 'smaller',
+                3: 'equal',
              }
         elif (task == 'classify'):
             self.actions = {i: str(i) for i in range(1, max_n+1)}
 
-        elif (task == 'produce'):
+        elif (task == 'reproduce'):
             self.actions = {
                 1: '1',
             }
@@ -371,10 +366,16 @@ class OtherInteractions():
         self.actions.update(str_to_str)
 
 def calc_max_episode_length(n_objects, observation):
-    if(observation == 'spatial'):
-        return 2*n_objects
-    elif(observation == 'temporal'):
-        return 2*n_objects
+    if (observation == 'spatial'):
+        return 1 * n_objects - 1
+    elif (observation == 'temporal'):
+        if(n_objects<=3):
+            return 1*n_objects+1
+        big_timestep_range_from_n = 5
+        max_time_length = min(big_timestep_range_from_n - 1, n_objects) * 2 # + max(0,max_objects-big_timestep_range_from_n)*3
+        if (n_objects >= big_timestep_range_from_n):
+            max_time_length += (n_objects - big_timestep_range_from_n + 1) * 3
+        return max_time_length
 
 
 

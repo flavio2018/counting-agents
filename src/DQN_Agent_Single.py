@@ -30,8 +30,8 @@ class DQN_Agent_Single(object):
         self.n_actions = self.ac_dim[0]
 
         # Network initializations
-        self.policy_net = CNN(n_channels, self.n_actions).to(self.device)
-        self.target_net = CNN(n_channels, self.n_actions).to(self.device)
+        self.policy_net = CNN(n_channels, self.n_actions, example_input=self.env.state).to(self.device)
+        self.target_net = CNN(n_channels, self.n_actions, example_input=self.env.state).to(self.device)
 
         if(agent_params['Is_pretrained_model']):
             self.policy_net.load_state_dict(torch.load(agent_params['pretrained_model_path']))

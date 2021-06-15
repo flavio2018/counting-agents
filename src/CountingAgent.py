@@ -1,19 +1,12 @@
 """
-This script contains the class of the complete agent
-involved in the communication/counting task. The agent
-is composed of a core ConvLSTM module and two Fully
-Connected layers which build a visual representation
-and it's mapping to the actions space, respectively.
+This script contains the class of the complete agent involved in the communication/counting task. The agent is composed of a core ConvLSTM module and two Fully Connected layers which build a visual representation and it's mapping to the actions space, respectively.
 """
 
-import numpy as np
 import torch
-
 from torch import nn
-
-from src.ConvLSTMCell import ConvLSTMCell
-from src.utils import initialize_weights
-
+import numpy as np
+from ConvLSTMCell import ConvLSTMCell
+from utils import initialize_weights
 
 class CountingAgent(nn.Module):
     """
@@ -27,9 +20,7 @@ class CountingAgent(nn.Module):
         vis_rep_size: Size of visual representation (should be 10*no_action?)
         action_space_size: Number of actions the agent can take.
     """
-    def __init__(self, input_channels, input_dim, n_kernels,
-                 dropout, pool_kernel_size, vis_rep_size=30,
-                 action_space_size=3):
+    def __init__(self, input_channels, input_dim, n_kernels, dropout, pool_kernel_size, vis_rep_size=30, action_space_size=3):
         
         super().__init__()
         self.input_channels = input_channels
@@ -53,7 +44,7 @@ class CountingAgent(nn.Module):
         # From flattened-2D to visual representation
         # From visual representation to action space
         self.Vis2Act = nn.Sequential(
-            torch.nn.Flatten(start_dim=1), # flattens all dimensions (keeps batches)
+            torch.nn.Flatten(start_dim=1), # flattens all dimensions (assumes no batches)
             nn.Linear(
                 in_features=size_flattened_rep,
                 out_features=self.vis_rep_size
@@ -68,9 +59,9 @@ class CountingAgent(nn.Module):
         self.apply(initialize_weights)
         
     def forward(self, x):
-        #print(x)
+        
         x, C = self.ConvLSTMCell(x)
-        #print(x)
+        
         x = self.Vis2Act(x)
         
         return x

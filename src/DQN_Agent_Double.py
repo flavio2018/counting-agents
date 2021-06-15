@@ -31,8 +31,8 @@ class DQN_Agent_Double(object):
         self.n_actions = self.ac_dim[0]
 
         # Network initializations
-        self.policy_net = N_Concat_CNNs(n_channels, self.n_actions, shared_policy=True).to(self.device)
-        self.target_net = N_Concat_CNNs(n_channels, self.n_actions, shared_policy=True).to(self.device)
+        self.policy_net = N_Concat_CNNs(n_channels, self.n_actions, shared_policy=True, example_input = self.env.states).to(self.device)
+        self.target_net = N_Concat_CNNs(n_channels, self.n_actions, shared_policy=True, example_input = self.env.states).to(self.device)
 
         if(agent_params['Is_pretrained_model']):
             self.policy_net.load_state_dict(torch.load(agent_params['pretrained_model_path']))

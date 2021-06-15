@@ -222,7 +222,7 @@ class SpatialReproduceMoveAndWrite_multi():
     single_or_multi_agent = 'multi'
 
     def __init__(self, params):
-        self.task = 'produce'
+        self.task = 'reproduce'
         self.observation = 'spatial'
         self.external_repr_tool = 'MoveAndWrite'
 
@@ -299,7 +299,7 @@ class SpatialReproduceMoveAndWrite_multi():
 class SpatialReproduceMoveAndWrite():
     single_or_multi_agent = 'single'
     def __init__(self, params):
-        self.task = 'produce'
+        self.task = 'reproduce'
         self.observation = 'spatial'
         self.external_repr_tool = 'MoveAndWrite'
 

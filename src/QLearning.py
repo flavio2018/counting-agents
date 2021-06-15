@@ -1,27 +1,17 @@
 """
-This file contains the implementation of the optimization procedure used
-to train the agents' networks in a reinforcement learning setting
-using the Q-Learning algorithm. The code assumes the use of an
-external Replay Memory (implemented in ReplayMemory.py) and the
-use of a Policy Network and a Target Network to improve stability.
+This file contains the implementation of the optimization procedure used to train the agents' networks in a reinforcement learning setting using the Q-Learning algorithm. The code assumes the use of an external Replay Memory (implemented in ReplayMemory.py) and the use of a Policy Network and a Target Network to improve stability.
 
-This file also contains two functions implementing the softmax
-and the epsilong-greedy action selection policies, used to
-choose the next action of the agent based on the Q Values
-computed by the network.
+This file also contains two functions implementing the softmax and the epsilong-greedy action selection policies, used to choose the next action of the agent based on the Q Values computed by the network.
 
 References: 
     - https://pytorch.org/tutorials/intermediate/reinforcement_q_learning.html
 """
 
 import random
-
-import numpy as np
 import torch
-
 from torch import nn
 from collections import namedtuple
-
+import numpy as np
 
 Transition = namedtuple('Transition',
                         ('state', 'action', 'next_state', 'reward'))
@@ -83,26 +73,29 @@ def eps_greedy_action_selection(state, policy_net, eps):
 def get_qvalues(state, policy_net):
     with torch.no_grad():
         policy_net.eval()
-        q_values = policy_net(state)
+        q_values = policy_net(state) # we start from 0
     
     return q_values
 
 def eps_greedy_modified(state, policy_net, eps):
+    action = 100 # any big number
+    n_actions = 6
     
-    sample = random.random()
-    if sample > eps:
-        with torch.no_grad():
-            policy_net.eval()
-            # t.max(1) will return largest column value of each row.
-            # second column on max result is index of where max element was
-            # found, so we pick action with the larger expected reward.
-            action = policy_net(state).max(0)[1].item() - 1 # we start from 0
-    else:
-        action = random.randrange(n_actions)
+    while action > n_actions:
+        sample = random.random()
+        if sample > eps:
+            with torch.no_grad():
+                policy_net.eval()
+                # t.max(1) will return largest column value of each row.
+                # second column on max result is index of where max element was
+                # found, so we pick action with the larger expected reward.
+                action = policy_net(state).max(0)[1].item() - 1 # we start from 0
+        else:
+            action = random.randrange(n_actions)
     
     return action
 
-def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, gamma=0.999):
+def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, n_iter, log, gamma=0.999):
     """
     Args:
         - replay_memory: The Replay Memory used to make observations uncorrelated.
@@ -116,9 +109,8 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # skip optimization when there is not a sufficient number of samples 
     # in the replay memory
     if len(replay_memory) < batch_size:
-        #print(f"Replay memory size ({len(replay_memory)}) is less than batch size ({batch_size})")
-        return None
-    
+        print(f"Replay memory size ({len(replay_memory)}) is less than batch size ({batch_size})")
+        return
     transitions = replay_memory.sample(batch_size)
     # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
     # detailed explanation). This converts batch-array of Transitions
@@ -128,8 +120,6 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
     reward_batch = torch.cat(batch.reward)
-    
-    action_indices = action_batch.max(1)[1].clone().view(batch_size,1) # to comply with gather operation later
     
     # Compute a mask of non-final states and concatenate the batch elements
     # (a final state would've been the one after which simulation ended)
@@ -144,7 +134,7 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # columns of actions taken. These are the actions which would've been taken
     # for each batch state according to policy_net
     policy_net.train()
-    state_action_values = policy_net(state_batch).gather(1, action_indices)
+    state_action_values = policy_net(state_batch).gather(1, action_batch)
 
     # Compute V(s_{t+1}) for all next states.
     # Expected values of actions for non_final_next_states are computed based
@@ -152,13 +142,17 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     # This is merged based on the mask, such that we'll have either the expected
     # state value or 0 in case the state was final.
     next_state_values = torch.zeros(batch_size) #, device=device) # TODO GPU
-    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach() # we don't want to compute the gradient's loss wrt the target net
+    next_state_values[non_final_mask] = target_net(non_final_next_states).max(1)[0].detach()
     # Compute the expected Q values
     expected_state_action_values = (next_state_values * gamma) + reward_batch
 
     # Compute loss
     loss_val = loss_fn(state_action_values, expected_state_action_values.unsqueeze(1))
-        
+    
+    print('hello!')
+    print(loss_val.item(), state_action_values, expected_state_expected_state_action_values)
+    log.add_scalar('Loss/train', loss_val.item(), n_iter)
+    
     # Optimize the model
     optimizer.zero_grad()
     loss_val.backward()
