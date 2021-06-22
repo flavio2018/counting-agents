@@ -8,7 +8,13 @@ based on Q-Learning.
 import time
 import torch
 
+from src.MLPAgent import MLPAgent
+from src.ReplayMemory import ReplayMemory
+from src.Reward import Reward
+from src.SingleAgentEnv import SingleAgentEnv
 from src.QLearning import optimize_model, get_qvalues
+from torch.utils.tensorboard import SummaryWriter
+from torch import nn
 
 
 def training_loop(env, n_episodes, replay_memory, policy_net,
@@ -90,3 +96,93 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
 
     CL_settings["n_iter"] = n_iter
     print("Done")
+
+
+if __name__=='__main__':
+
+    # ENVIRONMENT
+    obs_dim = 4                     # assume squared obs
+    min_CL_objects = 1
+    max_CL_objects = 1              # the maximum number of objects counted in the whole CL experience
+    n_objects_sequence = range(min_CL_objects, max_CL_objects + 1)
+    n_episodes_per_phase = 4000
+    max_episode_length = 1          # timesteps
+    generate_random_nobj = True
+    random_finger_position = False
+    random_objects_positions = True
+
+    # TASK
+    n_fingers = 2
+    n_actions = 4 * n_fingers + 1   # fingers move in 4 dimensions, one can write
+
+    # OPTIMIZATION
+    gamma = 0.995                   # gamma parameter for the long term reward
+    replay_memory_capacity = 10000  # Replay memory capacity
+    lr = 1e-3                       # Optimizer learning rate
+    target_net_update_steps = 10    # Number of episodes to wait before updating the target network
+    batch_size = 128                # Number of samples to take from the replay memory for each update
+
+    # AGENT
+    agent_params = {
+        'input_dim': obs_dim,
+        'n_layers': 4,
+        'vis_rep_size': 800,
+        'action_space_size': n_actions + max_CL_objects,
+    }
+    policy_agent = MLPAgent(**agent_params)
+    target_agent = MLPAgent(**agent_params)
+    memory = ReplayMemory(replay_memory_capacity)
+
+    optimizer = torch.optim.SGD(policy_agent.parameters(), lr=lr, momentum=0.9)
+    optimizer = torch.optim.Adam(policy_agent.parameters())
+    loss_fn = nn.SmoothL1Loss()
+
+    # REWARD
+    reward_params = {
+        "bad_label_punishment": True,
+        "curiosity": False,
+        "time_penalty": .1,
+    }
+    reward = Reward(**reward_params)
+
+    # CL
+    writer = SummaryWriter(log_dir='./log')
+
+    init_time = time.gmtime(time.time())
+    run_timestamp = ''.join([str(init_time.tm_mday),
+                             str(init_time.tm_mon),
+                             str(init_time.tm_hour),
+                             str(init_time.tm_min)])
+
+    CL_settings = {
+        "run_timestamp": run_timestamp,
+        "n_iter": 0,
+    }
+
+    state_visit_history = {}
+
+    for n_objects in n_objects_sequence:
+        n_iter = CL_settings["n_iter"]
+        print(f"## CL ## max n. objects = {n_objects}, n_iter = {n_iter}")
+
+        env_params = {
+            'max_CL_objects': max_CL_objects,
+            'CL_phases': len(n_objects_sequence),
+            'max_episode_objects': n_objects,
+            'obs_dim': obs_dim,
+            'n_actions': n_actions + max_CL_objects,
+            'max_episode_length': max_episode_length,
+            'n_episodes_per_phase': n_episodes_per_phase,
+            'generate_random_nobj': generate_random_nobj,
+            'random_finger_position': random_finger_position,
+            'random_objects_positions': random_objects_positions
+        }
+
+        # re-create the environment
+        env = SingleAgentEnv(reward, **env_params)
+
+        training_loop(
+            env, n_episodes_per_phase, memory, policy_agent, target_agent,
+            loss_fn, optimizer, writer, state_visit_history, eps=0.1, # TODO is eps needed?
+            gamma=gamma, batch_size=batch_size, CL_settings = CL_settings
+        )
