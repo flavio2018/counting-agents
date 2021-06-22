@@ -40,7 +40,10 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
     if CL_settings is None:
         n_iter = 0
         init_time = time.gmtime(time.time())
-        run_timestamp = str(init_time.tm_mday)+str(init_time.tm_mon)+str(init_time.tm_hour)+str(init_time.tm_min)
+        run_timestamp = ''.join(str(init_time.tm_mday),
+                                str(init_time.tm_mon),
+                                str(init_time.tm_hour),
+                                str(init_time.tm_min))
     else:
         n_iter_cl_phase = 0
         n_iter = CL_settings["n_iter"]
