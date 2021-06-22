@@ -157,12 +157,7 @@ class SingleAgentEnv(object):
 
     def generate_label(self):
         # generate label associated with observation
-        num_objects = self.obs.sum(dtype=int)
-        if self.CL:
-            self.obs_label = np.zeros(self.max_CL_objects)
-        else:
-            self.obs_label = np.zeros(self.max_episode_objects)
-        self.obs_label[num_objects - 1] = 1
+        self.obs_label = self.obs.sum(dtype=int)
 
     def generate_observation(self):
         # generate new observation
