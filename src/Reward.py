@@ -30,13 +30,12 @@ class Reward(object):
 
         if action in range(start_labels_actions, n_actions):
             chosen_label = int(env.actions_dict[action])
-            true_label = np.argmax(env.obs_label) + 1
 
-            if chosen_label == true_label and env.first_label_output:
+            if chosen_label == env.obs_label and env.first_label_output:
                 reward = 1
                 correct_label = True
 
-            elif (chosen_label != true_label) and self.bad_label_punishment:
+            elif (chosen_label != env.obs_label) and self.bad_label_punishment:
                 reward = -.5
 
             env.first_label_output = False
