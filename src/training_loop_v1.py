@@ -6,6 +6,8 @@ based on Q-Learning.
 """
 
 import time
+
+import numpy as np
 import torch
 
 from src.MLPAgent import MLPAgent
@@ -54,25 +56,27 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
         n_iter_cl_phase = 0
         n_iter = CL_settings["n_iter"]
         run_timestamp = CL_settings["run_timestamp"]
-    
+
     for episode in range(n_episodes):
         # Initialize the environment and state
         state = env.reset()
         done = False
-    
+        episode_rewards = []
+
         while not done:
             n_iter += 1
             n_iter_cl_phase += 1
             
             q_values = get_qvalues(state, policy_net)
             next_state, reward, done, correct_label = env.step(q_values, n_iter_cl_phase, visit_history)
-            
+            episode_rewards.append(reward)
+
             log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
             first_q_value = q_values[0,0].item()
             log.add_scalar(f'1st_state_q_value_{run_timestamp}', first_q_value, n_iter)
-            
+
             reward = torch.tensor([reward])  # , device=device) TODO: CUDA
-            
+
             if done:
                 next_state = None
                 
@@ -87,6 +91,9 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             
             if loss_val is not None:
                 log.add_scalar(f'Loss/train_{run_timestamp}', loss_val.item(), n_iter)
+
+            avg_episode_reward = np.mean(episode_rewards)
+            log.add_scalar(f'MeanEpisodeReward_{run_timestamp}', avg_episode_reward, episode)
         
         # Update the target network every target_update episodes
         if episode % target_update == 0:
