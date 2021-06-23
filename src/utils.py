@@ -2,10 +2,14 @@
 This file contains some utility functions used in different classes.
 """
 
+from prettytable import PrettyTable
+
+import numpy as np
 import torch
 
 from torch import nn
 from PIL import Image, ImageDraw
+from src import QLearning
 #from fonts.ttf import AmaticSC
 
 
@@ -51,7 +55,6 @@ def concat_2_imgs_v(im1, im2, dist=0):
     dst.paste(im2, (0, im1.height + dist))
     return dst
 
-
 def annotate_below(imgy, text):
     text_img = Image.new("RGBA", (int(imgy.width), int(imgy.height/4)), (255, 255, 255, 0))
     text_draw = ImageDraw.Draw(text_img)
@@ -87,3 +90,36 @@ def add_grid_lines(_img, _array):
         draw.line(line, fill=0, width=2)
     return _img
 
+
+def test_agent(agent, env, n_runs):
+    t = PrettyTable()
+    t.field_names = ['# objects', 'avg accuracy']
+
+    env.generate_random_nobj = False
+
+    for n_objects in range(1, env.max_CL_objects+1):
+        env.max_episode_objects = n_objects
+
+        correct_label_bools = []
+
+        for n_run in range(n_runs):
+            env.reset()
+            done = False
+
+            while not done:
+                state = torch.Tensor(env.state)
+                q_values = QLearning.get_qvalues(state, agent)
+                __, __, done, correct_label = env.step(
+                    q_values,
+                    env.max_train_iters,
+                    state_visit_history
+                )
+
+            if correct_label:
+                correct_label_bools.append(1)
+            else:
+                correct_label_bools.append(0)
+
+        t.add_row([n_objects, np.mean(correct_label_bools)])
+
+    print(t)
