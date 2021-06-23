@@ -15,6 +15,7 @@ from src.ReplayMemory import ReplayMemory
 from src.Reward import Reward
 from src.SingleAgentEnv import SingleAgentEnv
 from src.QLearning import optimize_model, get_qvalues
+from src.utils import test_agent
 from torch.utils.tensorboard import SummaryWriter
 from torch import nn
 
@@ -67,8 +68,9 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             next_state, reward, done, correct_label = env.step(q_values, n_iter_cl_phase, visit_history)
             episode_rewards.append(reward)
 
-            last_q_value = q_values[0, -1].item()
-            log.add_scalar(f'last_state_q_value_{run_timestamp}', last_q_value, n_iter)
+            last_q_values = q_values[0, -env.max_CL_objects:]
+            for label, q_value in enumerate(last_q_values):
+                log.add_scalar(f'q_values_{run_timestamp}/label_{label+1}', q_value, n_iter)
 
             reward = torch.tensor([reward])  # , device=device) TODO: CUDA
 
