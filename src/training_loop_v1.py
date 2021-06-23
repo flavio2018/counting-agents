@@ -96,7 +96,9 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             target_net.load_state_dict(policy_net.state_dict())
 
             avg_episode_reward = np.mean(episode_rewards)
-            log.add_scalar(f'Mean10EpisodeReward_{run_timestamp}', avg_episode_reward, episode / 10)
+            log.add_scalar(f'Mean{target_update}EpisodeReward_{run_timestamp}',
+                           avg_episode_reward,
+                           episode / target_update)
 
     CL_settings["n_iter"] = n_iter
     print("Done")
