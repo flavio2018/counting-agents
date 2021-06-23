@@ -183,4 +183,11 @@ if __name__=='__main__':
         env = SingleAgentEnv(reward, **env_params)
 
         training_loop(env, n_episodes_per_phase, memory, policy_agent, target_agent, loss_fn, optimizer, writer,
-                      state_visit_history, gamma=gamma, batch_size=batch_size, CL_settings=CL_settings)
+                      state_visit_history,
+                      gamma=gamma,
+                      batch_size=batch_size,
+                      CL_settings=CL_settings,
+                      target_update=target_net_update,
+        )
+
+    test_agent(policy_agent, env, 500, CL_settings['n_iter'])
