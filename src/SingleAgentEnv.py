@@ -207,7 +207,7 @@ class SingleAgentEnv(object):
 
         return action
 
-    def eps_greedy_modified(self, q_values, eps=.1):
+    def epsilon_greedy_action_selection(self, q_values, eps=.1):
         n_actions = len(self.actions_dict)
 
         sample = random.random()
