@@ -67,7 +67,6 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             next_state, reward, done, correct_label = env.step(q_values, n_iter_cl_phase, visit_history)
             episode_rewards.append(reward)
 
-            log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
             last_q_value = q_values[0, -1].item()
             log.add_scalar(f'last_state_q_value_{run_timestamp}', last_q_value, n_iter)
 
@@ -96,7 +95,6 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
 
             avg_episode_reward = np.mean(episode_rewards)
             log.add_scalar(f'Mean10EpisodeReward_{run_timestamp}', avg_episode_reward, episode / 10)
-            episode_rewards = []
 
     CL_settings["n_iter"] = n_iter
     print("Done")
@@ -109,7 +107,7 @@ if __name__=='__main__':
     min_CL_objects = 2
     max_CL_objects = 2              # the maximum number of objects counted in the whole CL experience
     n_objects_sequence = range(min_CL_objects, max_CL_objects + 1)
-    n_episodes_per_phase = 1000
+    n_episodes_per_phase = 1500
     max_episode_length = 1          # timesteps
     generate_random_nobj = True
     random_finger_position = False
