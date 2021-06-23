@@ -25,11 +25,6 @@ class MLPAgent(nn.Module):
             torch.nn.Flatten(start_dim=1),  # flattens all dimensions (keeps batches)
             nn.Linear(
                 in_features=size_flattened_rep,
-                out_features=self.vis_rep_size
-            ),
-            nn.Sigmoid(),
-            nn.Linear(
-                in_features=self.vis_rep_size,
                 out_features=self.action_space_size
             ),
             nn.Sigmoid()
