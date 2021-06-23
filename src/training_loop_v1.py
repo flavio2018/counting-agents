@@ -57,11 +57,12 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
         n_iter = CL_settings["n_iter"]
         run_timestamp = CL_settings["run_timestamp"]
 
+    episode_rewards = []
+
     for episode in range(n_episodes):
         # Initialize the environment and state
         state = env.reset()
         done = False
-        episode_rewards = []
 
         while not done:
             n_iter += 1
@@ -92,9 +93,11 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             if loss_val is not None:
                 log.add_scalar(f'Loss/train_{run_timestamp}', loss_val.item(), n_iter)
 
-            avg_episode_reward = np.mean(episode_rewards)
-            log.add_scalar(f'MeanEpisodeReward_{run_timestamp}', avg_episode_reward, episode)
-        
+            if episode % 10 == 0:
+                avg_episode_reward = np.mean(episode_rewards)
+                log.add_scalar(f'MeanEpisodeReward_{run_timestamp}', avg_episode_reward, episode)
+                episode_rewards = []
+
         # Update the target network every target_update episodes
         if episode % target_update == 0:
             print(f'E {episode} | Updating target network...')
