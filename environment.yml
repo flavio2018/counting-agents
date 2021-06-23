@@ -7,3 +7,4 @@ dependencies:
     - Pillow
     - pexpect
     - pycodestyle
+    - tensorboard
