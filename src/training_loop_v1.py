@@ -21,7 +21,7 @@ from torch import nn
 
 def training_loop(env, n_episodes, replay_memory, policy_net,
                   target_net, loss_fn, optimizer, log, visit_history,
-                  eps=None, tau=None, gamma=0.999, target_update=10,
+                  gamma=0.999, target_update=10,
                   batch_size=128, CL_settings=None):
     """
     Args:
@@ -35,15 +35,10 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
         - optimizer: PyTorch implementation of the chosen optimization algorithm
         - log: A TensorBoard SummaryWriter object
         - visit_history: Dict {state: n_visits} used to implement curiosity mechanism
-        - eps: The epsilon parameter for the eps-greedy policy.
-        - tau: The temperature parameter for the softmax policy.        
         - gamma: Gamma parameter in the Q-Learning algorithm for long-term reward
         - target_update: Number of episodes to wait before updating the target network
         - batch_size: Size of the batch sampled from the Replay Memory
     """
-    if eps is None and tau is None:
-        print("Both tau and epsilon are None.")
-        return
 
     if CL_settings is None:
         n_iter = 0
@@ -73,8 +68,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             episode_rewards.append(reward)
 
             log.add_scalar(f'Reward_{run_timestamp}', reward, n_iter)
-            first_q_value = q_values[0,0].item()
-            log.add_scalar(f'1st_state_q_value_{run_timestamp}', first_q_value, n_iter)
+            last_q_value = q_values[0, -1].item()
+            log.add_scalar(f'last_state_q_value_{run_timestamp}', last_q_value, n_iter)
 
             reward = torch.tensor([reward])  # , device=device) TODO: CUDA
 
@@ -93,16 +88,15 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             if loss_val is not None:
                 log.add_scalar(f'Loss/train_{run_timestamp}', loss_val.item(), n_iter)
 
-            if episode % 10 == 0:
-                avg_episode_reward = np.mean(episode_rewards)
-                log.add_scalar(f'MeanEpisodeReward_{run_timestamp}', avg_episode_reward, episode)
-                episode_rewards = []
-
         # Update the target network every target_update episodes
         if episode % target_update == 0:
             print(f'E {episode} | Updating target network...')
             # Copy the weights of the policy network to the target network
             target_net.load_state_dict(policy_net.state_dict())
+
+            avg_episode_reward = np.mean(episode_rewards)
+            log.add_scalar(f'Mean10EpisodeReward_{run_timestamp}', avg_episode_reward, episode / 10)
+            episode_rewards = []
 
     CL_settings["n_iter"] = n_iter
     print("Done")
@@ -112,10 +106,10 @@ if __name__=='__main__':
 
     # ENVIRONMENT
     obs_dim = 4                     # assume squared obs
-    min_CL_objects = 1
-    max_CL_objects = 1              # the maximum number of objects counted in the whole CL experience
+    min_CL_objects = 2
+    max_CL_objects = 2              # the maximum number of objects counted in the whole CL experience
     n_objects_sequence = range(min_CL_objects, max_CL_objects + 1)
-    n_episodes_per_phase = 4000
+    n_episodes_per_phase = 1000
     max_episode_length = 1          # timesteps
     generate_random_nobj = True
     random_finger_position = False
@@ -129,7 +123,6 @@ if __name__=='__main__':
     gamma = 0.995                   # gamma parameter for the long term reward
     replay_memory_capacity = 10000  # Replay memory capacity
     lr = 1e-3                       # Optimizer learning rate
-    target_net_update_steps = 10    # Number of episodes to wait before updating the target network
     batch_size = 128                # Number of samples to take from the replay memory for each update
 
     # AGENT
@@ -144,7 +137,7 @@ if __name__=='__main__':
     memory = ReplayMemory(replay_memory_capacity)
 
     optimizer = torch.optim.SGD(policy_agent.parameters(), lr=lr, momentum=0.9)
-    optimizer = torch.optim.Adam(policy_agent.parameters())
+    # optimizer = torch.optim.Adam(policy_agent.parameters())
     loss_fn = nn.SmoothL1Loss()
 
     # REWARD
@@ -191,8 +184,5 @@ if __name__=='__main__':
         # re-create the environment
         env = SingleAgentEnv(reward, **env_params)
 
-        training_loop(
-            env, n_episodes_per_phase, memory, policy_agent, target_agent,
-            loss_fn, optimizer, writer, state_visit_history, eps=0.1, # TODO is eps needed?
-            gamma=gamma, batch_size=batch_size, CL_settings = CL_settings
-        )
+        training_loop(env, n_episodes_per_phase, memory, policy_agent, target_agent, loss_fn, optimizer, writer,
+                      state_visit_history, gamma=gamma, batch_size=batch_size, CL_settings=CL_settings)
