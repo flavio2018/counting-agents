@@ -108,8 +108,9 @@ class SingleAgentEnv(object):
         self.step_counter += 1
         # TODO: reward when finger on object?
 
-        tau = self.get_tau(n_iter_cl_phase, self.max_train_iters)
-        action = self.softmax_action_selection(q_values, tau)
+        # tau = self.get_tau(n_iter_cl_phase, self.max_train_iters)
+        # action = self.softmax_action_selection(q_values, tau)
+        action = self.epsilon_greedy_action_selection(q_values)
 
         if action in self.finger_layer_scene.action_codes:
             self.finger_layer_scene.step(action, self.actions_dict)
