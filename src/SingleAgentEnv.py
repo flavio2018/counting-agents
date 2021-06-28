@@ -161,23 +161,171 @@ class SingleAgentEnv(object):
         self.obs_label = self.obs.sum(dtype=int)
 
     def generate_observation(self):
+        """
+        The mehtod creates the scene observed by the agent in the
+        current episode. Different levels of variability in the
+        creation of the scene are allowed:
+        - the position of the objects can be random or fixed;
+        - the size of the squared objects can be random or fixed.
+
+        The method internally checks that it is possible to spawn a new
+        object of the desired dimension in the current scene. If it's
+        not, the dimension is diminished by 1, until 0 is reached (in
+        which case a warining is raised and the objects spawning is
+        interrupted.)
+
+        The generated objects are also guaranteed not to overlap
+        and not to be adjacent.
+        """
         # generate new observation
         # k objects (k chosen randomly in [1, max_objects])
         # randomly placed on a 0-grid of shape dim x dim
+        picture_objects_coordinates = set()
+
         self.obs = np.zeros((self.obs_dim, self.obs_dim))
         if self.generate_random_nobj:
             n_objects = np.random.randint(self.max_episode_objects) + 1
         else:
             n_objects = self.max_episode_objects
 
-        if self.random_objects_positions:
-            ones_mask = np.random.choice(self.obs.size,
-                                         n_objects,
-                                         replace=False)
-        else:
-            ones_mask = np.array(range(n_objects))
+        valid_picture = False
+        for n in range(n_objects):
 
-        self.obs.ravel()[ones_mask] = 1
+            if self.random_object_size:
+                object_size = np.random.randint(self.max_object_size) + 1
+            else:
+                object_size = 1
+
+            if self._check_square_can_fit(object_size):
+                while not valid_picture:
+                    object_coordinates = self._generate_square(n, object_size,
+                                                               picture_objects_coordinates)
+                    valid_picture = ~self._check_squares_intersection_adjacency(picture_objects_coordinates,
+                                                                                objects_coordinates)
+                    if valid_picture:
+                        picture_objects_coordinates.extend(object_coordinates)
+            else:
+                object_size -= 1
+                if object_size == 0:
+                    warnings.warn(
+                        "No space left in the scene to draw a square of"
+                        f"shape (1,1). {n} objects drawn."
+                    )
+                    self.obs_label = n
+                    break
+
+        self.obs_label = n_objects
+
+        for coordinate in picture_objects_coordinates:
+            self.obs[coordinate] = 1
+
+
+    def _generate_square(self, n: int, size: int,
+                         picture_objects_coordinates: set) -> set:
+        """Generate a square of shape ``(size, size)`` in the scene.
+
+        Args:
+            n: number of object created (i.e. first, second, ..).
+            size: length of the side of the square.
+            picture_objects_coordinates: the coordinates of the objects
+                already present in the scene.
+        """
+        coordinates = set() # the coordinates of the square
+
+        valid_point = False
+        # first generate the coordinates of
+        # the upper left corner of the square.
+        # we exclude some coordinates based on the
+        # size of the observation and of the square.
+        while not valid_point:
+            if self.random_objects_positions:
+                upper_left_point = (np.random.randint(0, self.obs_dim + 1 - size),
+                                    np.random.randint(0, self.obs_dim + 1 - size))
+            else:
+                upper_left_point = (0, 0)
+
+            valid_point = ~self._check_squares_intersection_adjacency(
+                set(upper_left_point),
+                picture_objects_coordinates
+            )
+
+        coordinates.add(upper_left_point)
+
+        for x in range(size):
+            for y in range(size):
+                coordinates.append(
+                    (upper_left_point + x,
+                     upper_left_point - y)
+                )
+
+        return coordinates
+
+    def _check_squares_intersection_adjacency(self,
+                                              picture_squares_coordinates: set,
+                                              new_square_coordinates: set) -> bool:
+        """The function checks that a newly generated square is not
+        overlapping or adjacent with the squares already present
+        in the scene.
+
+        Args:
+            picture_squares_coordinates: the coordinates describing
+                the objects already in the scene.
+            new_square_coordinates: the coordinates of the new square.
+
+        Returns:
+            A boolean value stating wether the new object is
+            overlapping with or adjacent to other objects.
+        """
+        if len(picture_squares_coordinates.intersection(new_square_coordinates)) > 0:
+            return True
+
+        for (x, y) in new_square_coordinates:
+            if (
+                    ((x + 1, y) in picture_squares_coordinates) or
+                    ((x, y + 1) in picture_squares_coordinates) or
+                    ((x - 1, y) in picture_squares_coordinates) or
+                    ((x, y - 1) in picture_squares_coordinates)
+            ):
+                return True
+
+        return False
+
+    def _check_square_can_fit(self, square_size: int,
+                              picture_squares_coordinates: set):
+        """
+        The method establishes whether a square of shape
+        (square_size, square_size) can currently fit in the scene.
+        It answers to the question: there exist (square_size)*2
+        lines, adjacent square_size by square_size, such that
+        they intersecate in 4 points that are not in the scene?
+        The method is based on the following pseudo-code:
+
+        1. for each block of (square_size) consecutive values (columns),
+        from 0 to obs_dim
+            1.1 for each block of (square_size) consecutive values
+            (rows), from 0 to obs_dim
+                1.1.1 compute the cartesian product rows x columns
+                1.1.2 intersect the cartesian product with the set
+                of occupied spots
+
+        Args:
+            square_size: the lenght of the square side.
+            picture_squares_coordinates: the current occupied
+                coordinates in the scene.
+
+        Returns:
+            True if a square of shape (square_size, square_size) can
+            fit, False otherwise.
+        """
+        for col_start in range(0, self.obs_dim - square_size):
+            column_values = range(col_start, square_size)
+            for row_start in range(0, self.obs_dim - square_size):
+                row_values = range(row_start, square_size)
+                intersection_points = set(product(column_values, row_values))
+
+                if len(intersection_points & picture_squares_coordinates) == 0:
+                    return True
+        return False
 
     def softmax_action_selection(self, q_values, temperature):
         """
