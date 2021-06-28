@@ -9,6 +9,7 @@ import time
 import warnings
 
 import numpy as np
+import src.Reward
 import torch
 
 from IPython.display import display
@@ -27,47 +28,55 @@ class SingleAgentEnv(object):
     This class implements the environment as a whole.
     """
 
-    def __init__(self, reward, **kwargs):
+    def __init__(self, reward: src.Reward.Reward,
+                 max_CL_objects: int, CL_phases: int,
+                 max_episode_objects: int, obs_dim: int,
+                 max_episode_length: int,
+                 n_episodes_per_phase: int,
+                 max_object_size: int,
+                 generate_random_nobj: bool = True,
+                 random_objects_positions: bool = True,
+                 random_object_size: bool = True,
+                 random_finger_position: bool = False):
         """
         This method initializes the environment.
 
         Args:
             reward: An instance of the Reward class.
-            **kwargs:
-                max_CL_objects: the maximum number of objects that
-                    the agent will observe in the whole CL experience.
-                CL_phases: the number of CL phases.
-                max_episode_objects: the maximum number of objects that
-                    the agent can observe in the current episode.
-                obs_dim: the length of the side of the (squared)
-                    observation.
-                max_episode_length: the maximum duration of an episode.
-                n_episodes_per_phase: the maximum number of episodes in
-                    a CL phase.
-                generate_random_nobj: whether a random number of objects
-                    should be generated in each episode.
-                random_objects_positions: whether the objects should
-                    spawn in random positions in the scene.
-                random_object_size: whether the size of each newly
-                    generated object should be determined randomly.
-                max_object_size: the maximum object size used when
-                    spawining objects of random size.
-                random_finger_position: whether the fingers should be
-                    placed in random positions in the scene at the
-                    beginning of an episode.
+            max_CL_objects: the maximum number of objects that
+                the agent will observe in the whole CL experience.
+            CL_phases: the number of CL phases.
+            max_episode_objects: the maximum number of objects that
+                the agent can observe in the current episode.
+            obs_dim: the length of the side of the (squared)
+                observation.
+            max_episode_length: the maximum duration of an episode.
+            n_episodes_per_phase: the maximum number of episodes in
+                a CL phase.
+            max_object_size: the maximum object size used when
+                spawining objects of random size.
+            generate_random_nobj: whether a random number of objects
+                should be generated in each episode.
+            random_objects_positions: whether the objects should
+                spawn in random positions in the scene.
+            random_object_size: whether the size of each newly
+                generated object should be determined randomly.
+            random_finger_position: whether the fingers should be
+                placed in random positions in the scene at the
+                beginning of an episode.
         """
-        __slots__ = ('max_CL_objects', 'CL_phases', 'max_episode_objects',
-                     'obs_dim', 'max_episode_length', 'n_episodes_per_phase',
-                     'generate_random_nobj', 'random_objects_positions',
-                     'random_object_size', 'max_object_size'
-                     'random_finger_position')
 
-        # initialize attributes
-        for attribute in __slots__:
-            if attribute in kwargs:
-                setattr(self, attribute, kwargs[attribute])
-            else:
-                setattr(self, attribute, None)
+        self.max_CL_objects             = max_CL_objects
+        self.CL_phases                  = CL_phases
+        self.max_episode_objects        = max_episode_objects
+        self.obs_dim                    = obs_dim
+        self.max_episode_length         = max_episode_length
+        self.n_episodes_per_phase       = n_episodes_per_phase
+        self.generate_random_nobj       = generate_random_nobj
+        self.random_objects_positions   = random_objects_positions
+        self.random_object_size         = random_object_size
+        self.max_object_size            = max_object_size
+        self.random_finger_position     = random_finger_position
 
         self.max_train_iters = (self.CL_phases * self.n_episodes_per_phase *
                                 self.max_episode_length)
