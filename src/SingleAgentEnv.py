@@ -31,7 +31,7 @@ class SingleAgentEnv(object):
     def __init__(self, reward: src.Reward.Reward,
                  max_CL_objects: int, CL_phases: int,
                  max_episode_objects: int, obs_dim: int,
-                 max_episode_length: int,
+                 max_episode_length: int, n_actions: int,
                  n_episodes_per_phase: int,
                  max_object_size: int,
                  generate_random_nobj: bool = True,
@@ -70,6 +70,7 @@ class SingleAgentEnv(object):
         self.CL_phases                  = CL_phases
         self.max_episode_objects        = max_episode_objects
         self.obs_dim                    = obs_dim
+        self.n_actions                  = n_actions
         self.max_episode_length         = max_episode_length
         self.n_episodes_per_phase       = n_episodes_per_phase
         self.generate_random_nobj       = generate_random_nobj
@@ -90,7 +91,7 @@ class SingleAgentEnv(object):
         else:
             self.CL = False
 
-        self.actions_dict = {n: '' for n in range(kwargs['n_actions'])}
+        self.actions_dict = {n: '' for n in range(self.n_actions)}
 
         self.reward = reward
 
@@ -194,7 +195,6 @@ class SingleAgentEnv(object):
             initial_value) / num_iterations * 6)
         return initial_value * (exp_decay ** n_iter)
 
-    @deprecated
     def generate_label(self):
         # generate label associated with observation
         self.obs_label = self.obs.sum(dtype=int)
@@ -235,14 +235,15 @@ class SingleAgentEnv(object):
             else:
                 object_size = 1
 
-            if self._check_square_can_fit(object_size):
+            if self._check_square_can_fit(object_size,
+                                          picture_objects_coordinates):
                 while not valid_picture:
                     object_coordinates = self._generate_square(n, object_size,
                                                                picture_objects_coordinates)
                     valid_picture = ~self._check_squares_intersection_adjacency(picture_objects_coordinates,
-                                                                                objects_coordinates)
+                                                                                object_coordinates)
                     if valid_picture:
-                        picture_objects_coordinates.extend(object_coordinates)
+                        picture_objects_coordinates |= object_coordinates
             else:
                 object_size -= 1
                 if object_size == 0:
@@ -292,9 +293,9 @@ class SingleAgentEnv(object):
 
         for x in range(size):
             for y in range(size):
-                coordinates.append(
-                    (upper_left_point + x,
-                     upper_left_point - y)
+                coordinates.add(
+                    (upper_left_point[0] + x,
+                     upper_left_point[0] - y)
                 )
 
         return coordinates
