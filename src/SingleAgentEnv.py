@@ -28,6 +28,34 @@ class SingleAgentEnv(object):
     """
 
     def __init__(self, reward, **kwargs):
+        """
+        This method initializes the environment.
+
+        Args:
+            reward: An instance of the Reward class.
+            **kwargs:
+                max_CL_objects: the maximum number of objects that
+                    the agent will observe in the whole CL experience.
+                CL_phases: the number of CL phases.
+                max_episode_objects: the maximum number of objects that
+                    the agent can observe in the current episode.
+                obs_dim: the length of the side of the (squared)
+                    observation.
+                max_episode_length: the maximum duration of an episode.
+                n_episodes_per_phase: the maximum number of episodes in
+                    a CL phase.
+                generate_random_nobj: whether a random number of objects
+                    should be generated in each episode.
+                random_objects_positions: whether the objects should
+                    spawn in random positions in the scene.
+                random_object_size: whether the size of each newly
+                    generated object should be determined randomly.
+                max_object_size: the maximum object size used when
+                    spawining objects of random size.
+                random_finger_position: whether the fingers should be
+                    placed in random positions in the scene at the
+                    beginning of an episode.
+        """
         __slots__ = ('max_CL_objects', 'CL_phases', 'max_episode_objects',
                      'obs_dim', 'max_episode_length', 'n_episodes_per_phase',
                      'generate_random_nobj', 'random_objects_positions',
@@ -330,10 +358,18 @@ class SingleAgentEnv(object):
         return False
 
     def softmax_action_selection(self, q_values, temperature):
-        """
+        """Select an action given the q_values according to the
+        softmax action selection method.
+
         Args:
             - q_values: output of the network
             - temperature: value of temperature parameter of the softmax function
+
+        Returns:
+            The action chosen.
+
+        Todo:
+            Debug.
         """
 
         if temperature < 0:
