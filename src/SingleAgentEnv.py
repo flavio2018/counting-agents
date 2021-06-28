@@ -6,11 +6,13 @@ which implement the dynamics of the different environment parts.
 """
 import random
 import time
+import warnings
 
 import numpy as np
 import torch
 
 from IPython.display import display
+from itertools import product
 from PIL import Image
 
 from src import utils
