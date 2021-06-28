@@ -59,6 +59,7 @@ class SingleAgentEnv(object):
         __slots__ = ('max_CL_objects', 'CL_phases', 'max_episode_objects',
                      'obs_dim', 'max_episode_length', 'n_episodes_per_phase',
                      'generate_random_nobj', 'random_objects_positions',
+                     'random_object_size', 'max_object_size'
                      'random_finger_position')
 
         # initialize attributes
