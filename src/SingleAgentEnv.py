@@ -87,8 +87,6 @@ class SingleAgentEnv(object):
 
         self.generate_observation()
 
-        self.generate_label()
-
         # Initialize external representation
         # (the piece of paper the agent is writing on)
         self.ext_repr = ExternalRepresentation(self.obs_dim, self.actions_dict)
@@ -187,6 +185,7 @@ class SingleAgentEnv(object):
             initial_value) / num_iterations * 6)
         return initial_value * (exp_decay ** n_iter)
 
+    @deprecated
     def generate_label(self):
         # generate label associated with observation
         self.obs_label = self.obs.sum(dtype=int)
@@ -450,8 +449,6 @@ class SingleAgentEnv(object):
 
     def reset(self):
         self.generate_observation()
-
-        self.generate_label()
 
         # reset external representation
         self.ext_repr = ExternalRepresentation(self.obs_dim, self.actions_dict)
