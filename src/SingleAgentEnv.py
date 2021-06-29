@@ -308,8 +308,8 @@ class SingleAgentEnv(object):
 
         return coordinates
 
-    def _check_squares_intersection_adjacency(self,
-                                              picture_squares_coordinates: set,
+    @staticmethod
+    def _check_squares_intersection_adjacency(picture_squares_coordinates: set,
                                               new_square_coordinates: set) -> bool:
         """The function checks that a newly generated square is not
         overlapping or adjacent with the squares already present
