@@ -271,12 +271,10 @@ class SingleAgentEnv(object):
             self.obs[coordinate] = 1
 
 
-    def _generate_square(self, n: int, size: int,
-                         picture_objects_coordinates: set) -> set:
+    def _generate_square(self, size: int, picture_objects_coordinates: set) -> set:
         """Generate a square of shape ``(size, size)`` in the scene.
 
         Args:
-            n: number of object created (i.e. first, second, ..).
             size: length of the side of the square.
             picture_objects_coordinates: the coordinates of the objects
                 already present in the scene.
@@ -290,11 +288,11 @@ class SingleAgentEnv(object):
         # size of the observation and of the square.
         while not valid_point:
             upper_left_point = (np.random.randint(0, self.obs_dim + 1 - size),
-                                    np.random.randint(0, self.obs_dim + 1 - size))
+                                np.random.randint(0, self.obs_dim + 1 - size))
 
             valid_point = ~self._check_squares_intersection_adjacency(
                 set(upper_left_point),
-                picture_objects_coordinates
+                picture_objects_coordinates,
             )
 
         coordinates.add(upper_left_point)
@@ -303,7 +301,7 @@ class SingleAgentEnv(object):
             for y in range(size):
                 coordinates.add(
                     (upper_left_point[0] + x,
-                     upper_left_point[0] - y)
+                     upper_left_point[0] + y)
                 )
 
         return coordinates
