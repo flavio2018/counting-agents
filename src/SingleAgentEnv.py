@@ -35,7 +35,6 @@ class SingleAgentEnv(object):
                  n_episodes_per_phase: int,
                  max_object_size: int,
                  generate_random_nobj: bool = True,
-                 random_objects_positions: bool = True,
                  random_object_size: bool = True,
                  random_finger_position: bool = False):
         """
@@ -74,7 +73,6 @@ class SingleAgentEnv(object):
         self.max_episode_length         = max_episode_length
         self.n_episodes_per_phase       = n_episodes_per_phase
         self.generate_random_nobj       = generate_random_nobj
-        self.random_objects_positions   = random_objects_positions
         self.random_object_size         = random_object_size
         self.max_object_size            = max_object_size
         self.random_finger_position     = random_finger_position
@@ -278,11 +276,8 @@ class SingleAgentEnv(object):
         # we exclude some coordinates based on the
         # size of the observation and of the square.
         while not valid_point:
-            if self.random_objects_positions:
-                upper_left_point = (np.random.randint(0, self.obs_dim + 1 - size),
+            upper_left_point = (np.random.randint(0, self.obs_dim + 1 - size),
                                     np.random.randint(0, self.obs_dim + 1 - size))
-            else:
-                upper_left_point = (0, 0)
 
             valid_point = ~self._check_squares_intersection_adjacency(
                 set(upper_left_point),
