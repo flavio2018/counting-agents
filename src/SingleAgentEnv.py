@@ -225,32 +225,45 @@ class SingleAgentEnv(object):
         else:
             n_objects = self.max_episode_objects
 
-        valid_picture = False
         for n in range(n_objects):
+            valid_object_size = False
 
+            # choose object size
             if self.random_object_size:
                 object_size = np.random.randint(self.max_object_size) + 1
             else:
                 object_size = 1
 
-            if self._check_square_can_fit(object_size,
-                                          picture_objects_coordinates):
-                while not valid_picture:
-                    object_coordinates = self._generate_square(n, object_size,
-                                                               picture_objects_coordinates)
-                    valid_picture = ~self._check_squares_intersection_adjacency(picture_objects_coordinates,
-                                                                                object_coordinates)
-                    if valid_picture:
-                        picture_objects_coordinates |= object_coordinates
-            else:
-                object_size -= 1
-                if object_size == 0:
-                    warnings.warn(
-                        "No space left in the scene to draw a square of"
-                        f"shape (1,1). {n} objects drawn."
-                    )
-                    self.obs_label = n
-                    break
+            while not valid_object_size:
+                # check it's possible to generate an object
+                # of the chosen size in the current scene
+                if self._check_square_can_fit(object_size,
+                                              picture_objects_coordinates):
+                    valid_object_size = True
+                    valid_picture = False
+
+                    # attempt at generating a new object in
+                    # a valid random position
+                    while not valid_picture:
+                        object_coordinates = self._generate_square(n, object_size,
+                                                                   picture_objects_coordinates)
+                        valid_picture = ~self._check_squares_intersection_adjacency(picture_objects_coordinates,
+                                                                                    object_coordinates)
+                        if valid_picture:
+                            picture_objects_coordinates |= object_coordinates
+
+                # reduce object size if not possible
+                else:
+                    object_size -= 1
+
+                    # until the size reaches 0
+                    if object_size == 0:
+                        warnings.warn(
+                            "No space left in the scene to draw a square of"
+                            f"shape (1,1). {n} objects drawn."
+                        )
+                        self.obs_label = n
+                        break
 
         self.obs_label = n_objects
 
