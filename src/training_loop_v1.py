@@ -99,6 +99,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             log.add_scalar(f'Mean{target_update}EpisodeReward_{run_timestamp}',
                            avg_episode_reward,
                            episode / target_update)
+            episode_rewards = []
 
     CL_settings["n_iter"] = n_iter
     print("Done")
@@ -115,7 +116,6 @@ if __name__=='__main__':
     max_episode_length = 1          # timesteps
     generate_random_nobj = True
     random_finger_position = False
-    random_objects_positions = True
 
     # TASK
     n_fingers = 2
