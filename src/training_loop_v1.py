@@ -50,6 +50,9 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
     episode_rewards = []
 
     for episode in range(n_episodes):
+        if episode % 1000 == 0:
+            print(f"{episode=}")
+
         # Initialize the environment and state
         state = env.reset()
         done = False
@@ -86,7 +89,6 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
 
         # Update the target network every target_update episodes
         if episode % target_update == 0:
-            print(f'E {episode} | Updating target network...')
             # Copy the weights of the policy network to the target network
             target_net.load_state_dict(policy_net.state_dict())
 
