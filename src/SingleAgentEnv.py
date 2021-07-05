@@ -247,8 +247,8 @@ class SingleAgentEnv(object):
                     while not valid_picture:
                         object_coordinates = self._generate_square(n, object_size,
                                                                    picture_objects_coordinates)
-                        valid_picture = ~self._check_squares_intersection_adjacency(picture_objects_coordinates,
-                                                                                    object_coordinates)
+                        valid_picture = not self._check_squares_intersection_adjacency(picture_objects_coordinates,
+                                                                                       object_coordinates)
                         if valid_picture:
                             picture_objects_coordinates |= object_coordinates
 
@@ -290,8 +290,7 @@ class SingleAgentEnv(object):
             upper_left_point = (np.random.randint(0, self.obs_dim + 1 - size),
                                 np.random.randint(0, self.obs_dim + 1 - size))
 
-            valid_point = ~self._check_squares_intersection_adjacency(
-                set(upper_left_point),
+            valid_point = not self._check_squares_intersection_adjacency(
                 picture_objects_coordinates,
             )
 
