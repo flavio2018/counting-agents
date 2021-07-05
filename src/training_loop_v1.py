@@ -11,6 +11,7 @@ import numpy as np
 import torch
 
 from src.MLPAgent import MLPAgent
+from src.CNNAgent import CNNAgent
 from src.ReplayMemory import ReplayMemory
 from src.Reward import Reward
 from src.SingleAgentEnv import SingleAgentEnv
@@ -105,13 +106,15 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
 if __name__=='__main__':
 
     # ENVIRONMENT
-    obs_dim = 4                     # assume squared obs
-    min_CL_objects = 2
-    max_CL_objects = 2              # the maximum number of objects counted in the whole CL experience
+    obs_dim = 4                     # assume squared observation
+    min_CL_objects = 3
+    max_CL_objects = 3              # the maximum number of objects counted in the whole CL experience
+    max_object_size = 2
     n_objects_sequence = range(min_CL_objects, max_CL_objects + 1)
-    n_episodes_per_phase = 1500
+    n_episodes_per_phase = 60000
     max_episode_length = 1          # timesteps
     generate_random_nobj = True
+    random_object_size = False
     random_finger_position = False
 
     # TASK
@@ -121,18 +124,35 @@ if __name__=='__main__':
     # OPTIMIZATION
     gamma = 0.995                   # gamma parameter for the long term reward
     replay_memory_capacity = 10000  # Replay memory capacity
-    lr = 1e-3                       # Optimizer learning rate
+    lr = 1.5e-4                       # Optimizer learning rate
     batch_size = 128                # Number of samples to take from the replay memory for each update
+    target_net_update = 50          # Frequency of update of the target net
 
     # AGENT
-    agent_params = {
-        'input_dim': obs_dim,
-        'n_layers': 4,
-        'vis_rep_size': 800,
-        'action_space_size': n_actions + max_CL_objects,
-    }
-    policy_agent = MLPAgent(**agent_params)
-    target_agent = MLPAgent(**agent_params)
+    MLP = False
+    CNN = True
+
+    if MLP:
+        agent_params = {
+            'input_dim': obs_dim,
+            'n_layers': 4,
+            'vis_rep_size': 32,
+            'action_space_size': n_actions + max_CL_objects,
+        }
+        policy_agent = MLPAgent(**agent_params)
+        target_agent = MLPAgent(**agent_params)
+
+    elif CNN:
+        CNN_agent_params = {
+            'input_dim': obs_dim,
+            'input_channel': 4,
+            'n_kernels': 4,
+            'vis_rep_size': None,
+            'action_space_size': n_actions + max_CL_objects,
+        }
+        policy_agent = CNNAgent(**CNN_agent_params)
+        target_agent = CNNAgent(**CNN_agent_params)
+
     memory = ReplayMemory(replay_memory_capacity)
 
     optimizer = torch.optim.SGD(policy_agent.parameters(), lr=lr, momentum=0.9)
@@ -167,12 +187,13 @@ if __name__=='__main__':
             'CL_phases': len(n_objects_sequence),
             'max_episode_objects': n_objects,
             'obs_dim': obs_dim,
-            'n_actions': n_actions + max_CL_objects,
             'max_episode_length': max_episode_length,
+            'n_actions': n_actions + max_CL_objects,
             'n_episodes_per_phase': n_episodes_per_phase,
+            'max_object_size': max_object_size,
             'generate_random_nobj': generate_random_nobj,
+            'random_object_size': random_object_size,
             'random_finger_position': random_finger_position,
-            'random_objects_positions': random_objects_positions
         }
 
         # re-create the environment
