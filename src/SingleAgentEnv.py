@@ -294,15 +294,16 @@ class SingleAgentEnv(object):
 
             valid_point = not self._check_squares_intersection_adjacency(
                 picture_objects_coordinates,
+                set([upper_left_point]),
             )
 
         coordinates.add(upper_left_point)
 
         for x in range(size):
             for y in range(size):
-                coordinates.add(
-                    (upper_left_point[0] + x,
-                     upper_left_point[0] + y)
+                coordinates |= set(
+                    [(upper_left_point[0] + x,
+                     upper_left_point[1] + y)]
                 )
 
         return coordinates
