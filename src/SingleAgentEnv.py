@@ -239,6 +239,8 @@ class SingleAgentEnv(object):
                 # of the chosen size in the current scene
                 if self._check_square_can_fit(object_size,
                                               picture_objects_coordinates):
+                    self._plot_scene(self.obs_dim, picture_objects_coordinates)
+
                     valid_object_size = True
                     valid_picture = False
 
@@ -371,6 +373,23 @@ class SingleAgentEnv(object):
                 if len(intersection_points & picture_squares_coordinates) == 0:
                     return True
         return False
+
+    @staticmethod
+    def _plot_scene(scene_size: int, coordinates: set) -> None:
+        """
+        Generic method to plot a scene given the coordinates
+        of the objects that appear therein.
+
+        Args:
+            scene_size: length of the scene side.
+            coordinates: the objects coordinates.
+        """
+        scene = np.zeros((scene_size, scene_size))
+
+        for c in coordinates:
+            scene[c] += 1
+
+        print(scene)
 
     def softmax_action_selection(self, q_values, temperature):
         """Select an action given the q_values according to the
