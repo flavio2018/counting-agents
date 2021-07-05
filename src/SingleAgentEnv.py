@@ -247,7 +247,7 @@ class SingleAgentEnv(object):
                     # attempt at generating a new object in
                     # a valid random position
                     while not valid_picture:
-                        object_coordinates = self._generate_square(n, object_size,
+                        object_coordinates = self._generate_square(object_size,
                                                                    picture_objects_coordinates)
                         valid_picture = not self._check_squares_intersection_adjacency(picture_objects_coordinates,
                                                                                        object_coordinates)
@@ -296,8 +296,6 @@ class SingleAgentEnv(object):
                 picture_objects_coordinates,
                 set([upper_left_point]),
             )
-
-        coordinates.add(upper_left_point)
 
         for x in range(size):
             for y in range(size):
