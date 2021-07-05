@@ -366,12 +366,19 @@ class SingleAgentEnv(object):
             fit, False otherwise.
         """
         for col_start in range(0, self.obs_dim - square_size):
-            column_values = range(col_start, square_size)
+            column_values = range(col_start, col_start + square_size)
             for row_start in range(0, self.obs_dim - square_size):
-                row_values = range(row_start, square_size)
+                row_values = range(row_start, row_start + square_size)
                 intersection_points = set(product(column_values, row_values))
+                adjacency_point = set()
+                for (x, y) in intersection_points:
+                    adjacency_point |= set([(x + 1, y + 1)])
+                    adjacency_point |= set([(x + 1, y - 1)])
+                    adjacency_point |= set([(x - 1, y + 1)])
+                    adjacency_point |= set([(x - 1, y - 1)])
 
-                if len(intersection_points & picture_squares_coordinates) == 0:
+                if ((len(intersection_points & picture_squares_coordinates) == 0)
+                        and (len(adjacency_point & picture_squares_coordinates) == 0)):
                     return True
         return False
 
