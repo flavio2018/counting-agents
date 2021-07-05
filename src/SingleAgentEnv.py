@@ -225,7 +225,7 @@ class SingleAgentEnv(object):
         else:
             n_objects = self.max_episode_objects
 
-        for n in range(n_objects):
+        for n in range(1, n_objects + 1):
             valid_object_size = False
 
             # choose object size
