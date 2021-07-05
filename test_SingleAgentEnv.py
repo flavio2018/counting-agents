@@ -1,4 +1,5 @@
 import itertools
+import random
 import unittest
 
 import numpy as np
@@ -116,6 +117,8 @@ class TestSingleAgentEnv(unittest.TestCase):
         self.assertEqual(True, check_result)
 
     def test_new_object_is_squared(self):
+        """This method tests "heuristically" that a new object is
+        squared."""
         env = SingleAgentEnv(**env_params)
 
         random_size = np.random.randint(env.obs_dim) + 1
