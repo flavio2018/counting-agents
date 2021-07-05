@@ -143,7 +143,6 @@ class SingleAgentEnv(object):
 
         done = False  # signal episode ending
         self.step_counter += 1
-        # TODO: reward when finger on object?
 
         # tau = self.get_tau(n_iter_cl_phase, self.max_train_iters)
         # action = self.softmax_action_selection(q_values, tau)
@@ -182,7 +181,7 @@ class SingleAgentEnv(object):
 
         self.build_state()
 
-        return torch.Tensor(self.state), reward, done, correct_label
+        return action, torch.Tensor(self.state), reward, done, correct_label
 
     @staticmethod
     def get_tau(n_iter, num_iterations):
