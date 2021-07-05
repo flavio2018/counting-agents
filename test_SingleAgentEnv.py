@@ -90,6 +90,31 @@ class TestSingleAgentEnv(unittest.TestCase):
 
         self.assertEqual(True, check_result)
 
+    def test_detect_overlapping_objects(self):
+        """
+        This method tests that overlapping objects detection works.
+        """
+        scene_size, object_size, upper_left_point = self._generate_random_scene_setting()
+
+        # generate object coordinates
+        object_coordinates = self._generate_object_coordinates(upper_left_point, object_size)
+
+        valid_object = False
+        new_object_coordinates = {}
+        while not valid_object:
+            # generate a random-sized object
+            # that is overlapping with the first one
+            __, object_size, upper_left_point = self._generate_random_scene_setting(scene_size)
+
+            new_object_coordinates = self._generate_object_coordinates(upper_left_point, object_size)
+
+            if len(new_object_coordinates & object_coordinates) > 0:
+                valid_object = True
+
+        check_result = SingleAgentEnv._check_squares_intersection_adjacency(new_object_coordinates, object_coordinates)
+
+        self.assertEqual(True, check_result)
+
     def test_new_object_is_squared(self):
         env = SingleAgentEnv(**env_params)
 
