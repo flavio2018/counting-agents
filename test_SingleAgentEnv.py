@@ -85,5 +85,71 @@ class TestSingleAgentEnv(unittest.TestCase):
 
         self.assertEqual(random_size**2, len(coordinates))
 
+    def test_detect_impossible_overlapping_fit(self):
+        """This method tests that an impossible scene setting due to
+        a new object being necessarily overlapping with existing
+        objects is successfully spotted and thus avoided.
+        """
+        env = SingleAgentEnv(**env_params)
+
+        scene_size, object_size, upper_left_point = self._generate_random_scene_setting()
+        env.obs_dim = scene_size  # the tested method depends on this parameter
+
+        # generate object coordinates
+        object_coordinates = self._generate_object_coordinates(upper_left_point, object_size)
+
+        # generate coordinates for a new object
+        # that for sure overlaps the existing one
+        new_object_size = scene_size - object_size + 1
+        
+        check_result = env._check_square_can_fit(new_object_size, object_coordinates)
+        
+        self.assertEqual(False, check_result)
+
+    def test_detect_impossible_adjacent_fit(self):
+        """This method tests that an impossible scene setting due to
+        a new object being necessarily adjacent to existing ones
+        is successfully spotted and thus avoided.
+        """
+        env = SingleAgentEnv(**env_params)
+
+        # generate a scene with a square in the middle
+        scene_size = np.random.randint(3, 10)
+        env.obs_dim = scene_size  # the tested method depends on this attribute
+        object_diagonal_position = np.random.randint(1, scene_size // 2)  # border excluded
+        upper_left_point = (object_diagonal_position, object_diagonal_position)
+
+        object_size = 1
+        __, y = upper_left_point
+        while y < scene_size - (upper_left_point[0] + 1):
+            object_size += 1
+            y += 1
+
+        # generate object coordinates
+        object_coordinates = self._generate_object_coordinates(upper_left_point, object_size)
+        SingleAgentEnv._plot_scene(scene_size=scene_size, coordinates=object_coordinates)
+
+        # the new object will be sized as the
+        # space between old object and border
+        new_object_size = upper_left_point[0]
+        print(new_object_size)
+
+        # fill corners (they are the only spots
+        # where the new object can be placed legally)
+        # we start from the upper left corner of the scene
+        # and we fill every corner; the displacement is equal
+        # to the size of the main object + the size of the border
+        object_coordinates |= self._generate_object_coordinates((0, 0), new_object_size)
+        object_coordinates |= self._generate_object_coordinates((object_size + upper_left_point[0], 0), new_object_size)
+        object_coordinates |= self._generate_object_coordinates((0, object_size + upper_left_point[0]), new_object_size)
+        object_coordinates |= self._generate_object_coordinates((object_size + upper_left_point[0],
+                                                                 object_size + upper_left_point[0]), new_object_size)
+        SingleAgentEnv._plot_scene(scene_size=scene_size, coordinates=object_coordinates)
+
+        check_result = env._check_square_can_fit(new_object_size, object_coordinates)
+
+        self.assertEqual(False, check_result)
+
+
 if __name__ == '__main__':
     unittest.main()
