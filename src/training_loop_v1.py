@@ -5,7 +5,7 @@ a Gym-like environment and includes the optimization procedure
 based on Q-Learning.
 """
 
-import time
+import datetime
 
 import numpy as np
 import torch
@@ -43,15 +43,9 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
 
     if CL_settings is None:
         n_iter = 0
-        init_time = time.gmtime(time.time())
-        run_timestamp = ''.join(str(init_time.tm_mday),
-                                str(init_time.tm_mon),
-                                str(init_time.tm_hour),
-                                str(init_time.tm_min))
     else:
         n_iter_cl_phase = 0
         n_iter = CL_settings["n_iter"]
-        run_timestamp = CL_settings["run_timestamp"]
 
     episode_rewards = []
 
@@ -70,7 +64,8 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
 
             last_q_values = q_values[0, -env.max_CL_objects:]
             for label, q_value in enumerate(last_q_values):
-                log.add_scalar(f'q_values_{run_timestamp}/label_{label+1}', q_value, n_iter)
+                log.add_scalar(f'q_values/label_{label+1}_obs_{env.obs_label}',
+                               q_value, n_iter)
 
             reward = torch.tensor([reward])  # , device=device) TODO: CUDA
 
@@ -87,7 +82,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             loss_val = optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, optimizer, gamma)
             
             if loss_val is not None:
-                log.add_scalar(f'Loss/train_{run_timestamp}', loss_val.item(), n_iter)
+                log.add_scalar(f'Loss/train', loss_val.item(), n_iter)
 
         # Update the target network every target_update episodes
         if episode % target_update == 0:
@@ -96,7 +91,7 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             target_net.load_state_dict(policy_net.state_dict())
 
             avg_episode_reward = np.mean(episode_rewards)
-            log.add_scalar(f'Mean{target_update}EpisodeReward_{run_timestamp}',
+            log.add_scalar(f'Mean{target_update}EpisodeReward',
                            avg_episode_reward,
                            episode / target_update)
             episode_rewards = []
@@ -151,16 +146,11 @@ if __name__=='__main__':
     reward = Reward(**reward_params)
 
     # CL
-    writer = SummaryWriter(log_dir='./log')
-
-    init_time = time.gmtime(time.time())
-    run_timestamp = ''.join([str(init_time.tm_mday),
-                             str(init_time.tm_mon),
-                             str(init_time.tm_hour),
-                             str(init_time.tm_min)])
+    current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+    writer = SummaryWriter(log_dir=f'./log/{current_time}')
+    print(f"Logging in './log/{current_time}'")
 
     CL_settings = {
-        "run_timestamp": run_timestamp,
         "n_iter": 0,
     }
 
