@@ -26,16 +26,33 @@ class TestSingleAgentEnv(unittest.TestCase):
     """
     This class contains unit tests for the Single Agent Environment.
     """
-    def test_detect_adjacent_objects(self):
+    @staticmethod
+    def _generate_random_scene_setting(scene_size: int = None,
+                                       object_size: int = None) -> tuple:
         """
-        This method tests that the control for objects adjacency works.
+        This method is used in the tests for the object generation
+        process. It creates the parameters describing a random scene:
+        the random size of a scene, the random size of an object
+        in the scene, the random position of the object.
+        If scene_size is passed, the method can also be used to
+        generate new object parameters within the same scene.
+
+        Args:
+            scene_size: size of an existing scene (optional).
+            object_size: size of the object generated in the scene (optional).
+
+        Returns:
+            The values of the scene size, object size, and object
+            position.
         """
         # generate a random-sized scene
-        scene_size = np.random.randint(4, 10)
+        if scene_size is None:
+            scene_size = np.random.randint(4, 10)
         print(f'{scene_size=}')
 
         # generate a random-sized object
-        object_size = np.random.randint(2, scene_size - 1)
+        if object_size is None:
+            object_size = np.random.randint(2, scene_size - 1)
         print(f"{object_size=}")
 
         # generate a random position for the object
