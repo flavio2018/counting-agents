@@ -61,9 +61,37 @@ class TestSingleAgentEnv(unittest.TestCase):
                             np.random.randint(0, scene_size + 1 - object_size))
         print(f"{upper_left_point=}")
 
+        return scene_size, object_size, upper_left_point
+
+    @staticmethod
+    def _generate_object_coordinates(upper_left_point: tuple, object_size: int) -> set:
+        """
+        Given the upper left coordinate of a squared object and
+        its size, the method generates the sets of its coordinates.
+
+        Args:
+            upper_left_point: the upper left coordinate of a squared object.
+            object_size: length of the object's side.
+
+        Returns:
+            The set of the object's coordinates in the scene.
+        """
         # generate object coordinates
-        object_coordinates = set(itertools.product(range(upper_left_point[0], upper_left_point[0] + object_size),
-                                                   range(upper_left_point[1], upper_left_point[1] + object_size)))
+        object_coordinates = set(itertools.product(
+            range(upper_left_point[0], upper_left_point[0] + object_size),
+            range(upper_left_point[1], upper_left_point[1] + object_size))
+        )
+
+        return object_coordinates
+
+    def test_detect_adjacent_objects(self):
+        """
+        This method tests that the control for objects adjacency works.
+        """
+
+        scene_size, object_size, upper_left_point = self._generate_random_scene_setting()
+        # generate object coordinates
+        object_coordinates = self._generate_object_coordinates(upper_left_point, object_size)
 
         # generate a (1,1)-shaped new object
         # that is adjacent to the first one
