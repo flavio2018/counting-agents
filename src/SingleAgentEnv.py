@@ -239,7 +239,6 @@ class SingleAgentEnv(object):
                 # of the chosen size in the current scene
                 if self._check_square_can_fit(object_size,
                                               picture_objects_coordinates):
-                    self._plot_scene(self.obs_dim, picture_objects_coordinates)
 
                     valid_object_size = True
                     valid_picture = False
@@ -343,18 +342,9 @@ class SingleAgentEnv(object):
         """
         The method establishes whether a square of shape
         (square_size, square_size) can currently fit in the scene.
-        It answers to the question: there exist (square_size)*2
+        It answers to the question: are there (square_size)*2
         lines, adjacent square_size by square_size, such that
         they intersecate in 4 points that are not in the scene?
-        The method is based on the following pseudo-code:
-
-        1. for each block of (square_size) consecutive values (columns),
-        from 0 to obs_dim
-            1.1 for each block of (square_size) consecutive values
-            (rows), from 0 to obs_dim
-                1.1.1 compute the cartesian product rows x columns
-                1.1.2 intersect the cartesian product with the set
-                of occupied spots
 
         Args:
             square_size: the lenght of the square side.
