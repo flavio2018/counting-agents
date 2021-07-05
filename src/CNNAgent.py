@@ -29,22 +29,36 @@ class CNNAgent(nn.Module):
 
         # From flattened-2D to visual representation
         # From visual representation to action space
-        self.Vis2Act = nn.Sequential(
-            torch.nn.Flatten(start_dim=1),  # flattens all dimensions (keeps batches)
-            nn.Linear(
+        self.flattener = torch.nn.Flatten(start_dim=1)
+
+        if vis_rep_size != None:
+            self.linear1 = nn.Linear(
                 in_features=size_flattened_rep,
                 out_features=self.vis_rep_size
-            ),
-            nn.Linear(
+            )
+            self.linear2 = nn.Linear(
                 in_features=self.vis_rep_size,
                 out_features=self.action_space_size
-            ),
-            nn.Sigmoid()
-        )
+            )
+        else:
+            self.linear1 = nn.Linear(
+                in_features=size_flattened_rep,
+                out_features=self.action_space_size
+            )
 
         self.apply(initialize_weights)
 
     def forward(self, x):
+        sigm = nn.Sigmoid()
         x = self.ConvLayer(x)
-        return self.Vis2Act(x)
+
+        x = self.flattener(x)
+        x = self.linear1(x)
+        x = sigm(x)
+
+        if self.vis_rep_size != None:
+            x = self.linear2(x)
+            x = sigm(x)
+
+        return x
 
