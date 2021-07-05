@@ -322,9 +322,11 @@ class SingleAgentEnv(object):
             A boolean value stating wether the new object is
             overlapping with or adjacent to other objects.
         """
+        # check intersection
         if len(picture_squares_coordinates.intersection(new_square_coordinates)) > 0:
             return True
 
+        # check adjacency
         for (x, y) in new_square_coordinates:
             if (
                     ((x + 1, y) in picture_squares_coordinates) or
