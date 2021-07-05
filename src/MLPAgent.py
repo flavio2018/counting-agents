@@ -7,15 +7,12 @@ from src.utils import initialize_weights
 
 class MLPAgent(nn.Module):
 
-    def __init__(self, **kwargs):
-        __slots__ = ('input_dim', 'n_layers', 'vis_rep_size', 'action_space_size')
-        super().__init__()
+    def __init__(self, input_dim, n_layers, vis_rep_size, action_space_size):
 
-        for attribute in __slots__:
-            if attribute in kwargs:
-                setattr(self, attribute, kwargs[attribute])
-            else:
-                setattr(self, attribute, None)
+        self.input_dim = input_dim
+        self.n_layers = n_layers
+        self.vis_rep_size = vis_rep_size
+        self.action_space_size = action_space_size
 
         size_flattened_rep = self.input_dim * self.input_dim * self.n_layers
 
