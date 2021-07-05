@@ -137,7 +137,7 @@ class SingleAgentEnv(object):
         # it outputs a label and it is correct
         self.first_label_output = True
 
-    def step(self, q_values, n_iter_cl_phase, visit_history):
+    def step(self, q_values, n_episode, visit_history):
         # Define how action interacts with environment:
         # e.g. with observation space and external representation
 
@@ -146,7 +146,8 @@ class SingleAgentEnv(object):
 
         # tau = self.get_tau(n_iter_cl_phase, self.max_train_iters)
         # action = self.softmax_action_selection(q_values, tau)
-        action = self.epsilon_greedy_action_selection(q_values)
+        exp_decaying_epsilon = self.get_exp_decaying_eps(n_episode)
+        action = self.epsilon_greedy_action_selection(q_values, eps=exp_decaying_epsilon)
 
         if action in self.finger_layer_scene.action_codes:
             self.finger_layer_scene.step(action, self.actions_dict)
@@ -191,6 +192,11 @@ class SingleAgentEnv(object):
         exp_decay = np.exp(-np.log(
             initial_value) / num_iterations * 6)
         return initial_value * (exp_decay ** n_iter)
+
+    def get_exp_decaying_eps(self, n_episode):
+        initial_value = 6 # this value regulates the shape of the curve (higher -> steeper)
+        exp_decay = np.exp(-np.log(initial_value) / self.n_episodes_per_phase * 6)
+        return (initial_value * (exp_decay ** n_episode))/initial_value
 
     def generate_label(self):
         # generate label associated with observation
