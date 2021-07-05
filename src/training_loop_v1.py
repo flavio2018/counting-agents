@@ -63,8 +63,13 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
             n_iter_cl_phase += 1
             
             q_values = get_qvalues(state, policy_net)
-            next_state, reward, done, correct_label = env.step(q_values, n_iter_cl_phase, visit_history)
+            action, next_state, reward, done, correct_label = env.step(q_values, n_iter_cl_phase, visit_history)
             episode_rewards.append(reward)
+
+            # for debug
+            if episode % 1000 == 0:
+                print(env.obs)
+                print(f"Action chosen: {env.actions_dict[action]}")
 
             last_q_values = q_values[0, -env.max_CL_objects:]
             for label, q_value in enumerate(last_q_values):
@@ -106,15 +111,15 @@ def training_loop(env, n_episodes, replay_memory, policy_net,
 if __name__=='__main__':
 
     # ENVIRONMENT
-    obs_dim = 4                     # assume squared observation
+    obs_dim = 5                     # assume squared observation
     min_CL_objects = 3
     max_CL_objects = 3              # the maximum number of objects counted in the whole CL experience
     max_object_size = 2
     n_objects_sequence = range(min_CL_objects, max_CL_objects + 1)
-    n_episodes_per_phase = 60000
+    n_episodes_per_phase = 40000
     max_episode_length = 1          # timesteps
     generate_random_nobj = True
-    random_object_size = False
+    random_object_size = True
     random_finger_position = False
 
     # TASK
@@ -124,7 +129,7 @@ if __name__=='__main__':
     # OPTIMIZATION
     gamma = 0.995                   # gamma parameter for the long term reward
     replay_memory_capacity = 10000  # Replay memory capacity
-    lr = 1.5e-4                       # Optimizer learning rate
+    lr = 1.5e-3                       # Optimizer learning rate
     batch_size = 128                # Number of samples to take from the replay memory for each update
     target_net_update = 50          # Frequency of update of the target net
 
@@ -145,7 +150,7 @@ if __name__=='__main__':
     elif CNN:
         CNN_agent_params = {
             'input_dim': obs_dim,
-            'input_channel': 4,
+            'input_channels': 4,
             'n_kernels': 4,
             'vis_rep_size': None,
             'action_space_size': n_actions + max_CL_objects,
