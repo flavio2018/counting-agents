@@ -100,12 +100,18 @@ class SingleAgentEnv(object):
         self.ext_repr = ExternalRepresentation(self.obs_dim, self.actions_dict)
 
         # Initialize Finger layers: Single 1 in 0-grid of shape dim x dim
-        self.finger_layer_scene = FingerLayer(self.obs_dim,
-                                              self.actions_dict,
-                                              self.random_finger_position)
-        self.finger_layer_repr = FingerLayer(self.obs_dim,
-                                             self.actions_dict,
-                                             self.random_finger_position)
+        self.finger_layer_scene = FingerLayer(
+            'scene_',
+            self.obs_dim,
+            self.actions_dict,
+            self.random_finger_position
+        )
+        self.finger_layer_repr = FingerLayer(
+            'repr_',
+            self.obs_dim,
+            self.actions_dict,
+            self.random_finger_position
+        )
 
         # Fill actions dict empty positions (number labels)
         label = 1
@@ -147,6 +153,8 @@ class SingleAgentEnv(object):
         # tau = self.get_tau(n_iter_cl_phase, self.max_train_iters)
         # action = self.softmax_action_selection(q_values, tau)
         exp_decaying_epsilon = self.get_exp_decaying_eps(n_episode)
+
+
         action = self.epsilon_greedy_action_selection(q_values, eps=exp_decaying_epsilon)
 
         if action in self.finger_layer_scene.action_codes:
@@ -171,8 +179,12 @@ class SingleAgentEnv(object):
 
         # new episode ending logic: if label is correct or
         # the episode lasted too long
-        if correct_label or (self.step_counter > self.max_episode_length):
+        if correct_label or (self.step_counter >= self.max_episode_length):
             done = True
+
+        # visualize the shape of the decay
+        if (n_episode % 1000 == 0) and not done:
+            print(f"{exp_decaying_epsilon=}")
 
         # Build action-array according to the int/string action.
         # This is mainly for the demo mode, where actions are given
@@ -194,7 +206,7 @@ class SingleAgentEnv(object):
         return initial_value * (exp_decay ** n_iter)
 
     def get_exp_decaying_eps(self, n_episode):
-        initial_value = 6 # this value regulates the shape of the curve (higher -> steeper)
+        initial_value = 10 # this value regulates the shape of the curve (higher -> steeper)
         exp_decay = np.exp(-np.log(initial_value) / self.n_episodes_per_phase * 6)
         return (initial_value * (exp_decay ** n_episode))/initial_value
 
@@ -543,7 +555,7 @@ class FingerLayer:
     This class implements the finger movement part of the environment.
     """
 
-    def __init__(self, layer_dim, env_actions_dict, random_finger_position=False):
+    def __init__(self, layer_name, layer_dim, env_actions_dict, random_finger_position=False):
         self.layer_dim = layer_dim
         self.random_finger_position = random_finger_position
         self.fingerlayer = np.zeros((layer_dim, layer_dim))
@@ -558,7 +570,7 @@ class FingerLayer:
             self.pos_y = 0
         self.fingerlayer[self.pos_x, self.pos_y] = 1
 
-        actions = ['left', 'right', 'up', 'down']
+        actions = [layer_name + a for a in ['_left', '_right', '_up', '_down']]
         self.action_codes = set()
 
         # this loop inserts an action in the general env_actions_dict
