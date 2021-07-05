@@ -620,3 +620,12 @@ class ExternalRepresentation:
         # This line implements if ext_repr[at_curr_pos]==0 --> set it to 1.
         # if==1 leave it like that.
         self.external_representation[pos[0], pos[1]] += abs(self.external_representation[pos[0], pos[1]] - 1)
+
+if __name__ == '__main__':
+    from src.Reward import Reward
+
+    reward = Reward(**{'bad_label_punishment': False, 'curiosity': False, 'time_penalty': False})
+    env = SingleAgentEnv(reward, 3, 1, 4, 8, 1, 10, 1, 4)
+
+    print(env.obs)
+    print(env.obs_label)
