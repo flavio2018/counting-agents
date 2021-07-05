@@ -7,15 +7,15 @@ from src.utils import initialize_weights
 
 class CNNAgent(nn.Module):
 
-    def __init__(self, **kwargs):
-        __slots__ = ('input_dim', 'input_channels', 'n_kernels', 'vis_rep_size', 'action_space_size')
+    def __init__(self, input_dim: int, input_channels: int, n_kernels: int,
+                 vis_rep_size: int = None, action_space_size: int = None):
         super().__init__()
 
-        for attribute in __slots__:
-            if attribute in kwargs:
-                setattr(self, attribute, kwargs[attribute])
-            else:
-                setattr(self, attribute, None)
+        self.input_dim = input_dim
+        self.input_channels = input_channels
+        self.n_kernels = n_kernels
+        self.vis_rep_size = vis_rep_size
+        self.action_space_size = action_space_size
 
         size_flattened_rep = self.input_dim * self.input_dim * self.n_kernels
 
