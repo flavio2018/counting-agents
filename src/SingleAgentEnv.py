@@ -53,6 +53,7 @@ class SingleAgentEnv(object):
             obs_dim: the length of the side of the (squared)
                 observation.
             max_episode_length: the maximum duration of an episode.
+            n_actions: the size of the action space.
             n_episodes_per_phase: the maximum number of episodes in
                 a CL phase.
             max_object_size: the maximum object size used when
@@ -63,8 +64,6 @@ class SingleAgentEnv(object):
                 exponential decay profile curve (higher steeper)
             generate_random_nobj: whether a random number of objects
                 should be generated in each episode.
-            random_objects_positions: whether the objects should
-                spawn in random positions in the scene.
             random_object_size: whether the size of each newly
                 generated object should be determined randomly.
             random_finger_position: whether the fingers should be
@@ -79,15 +78,14 @@ class SingleAgentEnv(object):
         self.CL_phases                  = CL_phases
         self.max_episode_objects        = max_episode_objects
         self.obs_dim                    = obs_dim
-        self.n_actions                  = n_actions
         self.max_episode_length         = max_episode_length
+        self.n_actions                  = n_actions
         self.n_episodes_per_phase       = n_episodes_per_phase
         self.max_object_size            = max_object_size
         self.default_eps                = default_eps
         self.exp_dec_steepness          = exp_dec_steepness
         self.generate_random_nobj       = generate_random_nobj
         self.random_object_size         = random_object_size
-        self.max_object_size            = max_object_size
         self.random_finger_position     = random_finger_position
         self.exponential_decay          = exponential_decay
 
