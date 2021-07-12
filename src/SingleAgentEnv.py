@@ -34,9 +34,12 @@ class SingleAgentEnv(object):
                  max_episode_length: int, n_actions: int,
                  n_episodes_per_phase: int,
                  max_object_size: int,
+                 default_eps: float = .1,
+                 exp_dec_steepness: int = 10,
                  generate_random_nobj: bool = True,
                  random_object_size: bool = True,
-                 random_finger_position: bool = False):
+                 random_finger_position: bool = False,
+                 exponential_decay: bool = False):
         """
         This method initializes the environment.
 
@@ -54,6 +57,10 @@ class SingleAgentEnv(object):
                 a CL phase.
             max_object_size: the maximum object size used when
                 spawining objects of random size.
+            default_eps: fixed value for the episilon parameter in the
+                epsilon greedy policy when exponential_decay is False
+            exp_dec_steepness: value that regulates the steepness of the
+                exponential decay profile curve (higher steeper)
             generate_random_nobj: whether a random number of objects
                 should be generated in each episode.
             random_objects_positions: whether the objects should
@@ -63,6 +70,9 @@ class SingleAgentEnv(object):
             random_finger_position: whether the fingers should be
                 placed in random positions in the scene at the
                 beginning of an episode.
+            exponential_decay: whether an exponential decay profile
+                for the value of epsilon parameter in the epsilon greedy
+                policy should be used.
         """
 
         self.max_CL_objects             = max_CL_objects
@@ -72,10 +82,14 @@ class SingleAgentEnv(object):
         self.n_actions                  = n_actions
         self.max_episode_length         = max_episode_length
         self.n_episodes_per_phase       = n_episodes_per_phase
+        self.max_object_size            = max_object_size
+        self.default_eps                = default_eps
+        self.exp_dec_steepness          = exp_dec_steepness
         self.generate_random_nobj       = generate_random_nobj
         self.random_object_size         = random_object_size
         self.max_object_size            = max_object_size
         self.random_finger_position     = random_finger_position
+        self.exponential_decay          = exponential_decay
 
         self.max_train_iters = (self.CL_phases * self.n_episodes_per_phase *
                                 self.max_episode_length)
@@ -152,10 +166,14 @@ class SingleAgentEnv(object):
 
         # tau = self.get_tau(n_iter_cl_phase, self.max_train_iters)
         # action = self.softmax_action_selection(q_values, tau)
-        exp_decaying_epsilon = self.get_exp_decaying_eps(n_episode)
+        if self.exponential_decay:
+            eps = self.get_exp_decaying_eps(n_episode)
+            # set limit
+            eps = max(exp_decaying_epsilon, 1e-6)
+        else:
+            eps = self.default_eps
 
-
-        action = self.epsilon_greedy_action_selection(q_values, eps=exp_decaying_epsilon)
+        action = self.epsilon_greedy_action_selection(q_values, eps=eps)
 
         if action in self.finger_layer_scene.action_codes:
             self.finger_layer_scene.step(action, self.actions_dict)
@@ -184,7 +202,7 @@ class SingleAgentEnv(object):
 
         # visualize the shape of the decay
         if (n_episode % 1000 == 0) and not done:
-            print(f"{exp_decaying_epsilon=}")
+            print(f"{eps=}")
 
         # Build action-array according to the int/string action.
         # This is mainly for the demo mode, where actions are given
@@ -206,9 +224,8 @@ class SingleAgentEnv(object):
         return initial_value * (exp_decay ** n_iter)
 
     def get_exp_decaying_eps(self, n_episode):
-        initial_value = 10 # this value regulates the shape of the curve (higher -> steeper)
-        exp_decay = np.exp(-np.log(initial_value) / self.n_episodes_per_phase * 6)
-        return (initial_value * (exp_decay ** n_episode))/initial_value
+        exp_decay = np.exp(-np.log(self.exp_dec_steepness) / self.n_episodes_per_phase * 6)
+        return (self.exp_dec_steepness * (exp_decay ** n_episode)) / self.exp_dec_steepness
 
     def generate_label(self):
         # generate label associated with observation
