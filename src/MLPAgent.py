@@ -41,15 +41,15 @@ class MLPAgent(nn.Module):
         self.apply(initialize_weights)
 
     def forward(self, x):
-        sigm = nn.Sigmoid()
+        leaky_relu = nn.LeakyReLU()
 
         x = self.flattener(x)
         x = self.linear1(x)
-        x = sigm(x)
+        x = leaky_relu(x)
 
         if self.vis_rep_size != None:
             x = self.linear2(x)
-            x = sigm(x)
+            x = leaky_relu(x)
 
         return x
 
