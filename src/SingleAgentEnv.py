@@ -165,9 +165,9 @@ class SingleAgentEnv(object):
         # tau = self.get_tau(n_iter_cl_phase, self.max_train_iters)
         # action = self.softmax_action_selection(q_values, tau)
         if self.exponential_decay:
-            eps = self.get_exp_decaying_eps(n_episode)
+            eps = self._get_exp_decaying_eps(n_episode)
             # set limit
-            eps = max(exp_decaying_epsilon, 1e-6)
+            eps = max(eps, 1e-6)
         else:
             eps = self.default_eps
 
