@@ -246,6 +246,10 @@ class SingleAgentEnv(object):
         The generated objects are also guaranteed not to overlap
         and not to be adjacent.
         """
+        # a flag signaling that the scene generation process
+        # ended sooner than expected
+        early_ending = False
+
         # generate new observation
         # k objects (k chosen randomly in [1, max_objects])
         # randomly placed on a 0-grid of shape dim x dim
@@ -257,7 +261,13 @@ class SingleAgentEnv(object):
         else:
             n_objects = self.max_episode_objects
 
+        # counter of the number of objects actually drawn
+        objects_drawn = n_objects
+
         for n in range(1, n_objects + 1):
+            if early_ending:
+                break
+
             valid_object_size = False
 
             # choose object size
@@ -291,9 +301,11 @@ class SingleAgentEnv(object):
 
                     # until the size reaches 0
                     if object_size == 0:
+                        early_ending = True
+                        objects_drawn -= (n_objects - n) + 1
                         warnings.warn(
                             "No space left in the scene to draw a square of"
-                            f"shape (1,1). {n} objects drawn."
+                            f"shape (1,1). {n - 1} objects drawn."
                         )
                         break
 
