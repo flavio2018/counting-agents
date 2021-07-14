@@ -105,7 +105,7 @@ class SingleAgentEnv(object):
 
         self.reward = reward
 
-        self.generate_observation()
+        self._generate_observation()
 
         # Initialize external representation
         # (the piece of paper the agent is writing on)
@@ -134,7 +134,7 @@ class SingleAgentEnv(object):
 
         # Initialize whole state space:
         # concatenated observation & external representation
-        self.build_state()
+        self._build_state()
 
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         # self.otherinteractions = OtherInteractions(len(self.actions_dict), self.actions_dict)
@@ -171,7 +171,7 @@ class SingleAgentEnv(object):
         else:
             eps = self.default_eps
 
-        action = self.epsilon_greedy_action_selection(q_values, eps=eps)
+        action = self._epsilon_greedy_action_selection(q_values, eps=eps)
 
         if action in self.finger_layer_scene.action_codes:
             self.finger_layer_scene.step(action, self.actions_dict)
@@ -208,7 +208,7 @@ class SingleAgentEnv(object):
         self.action_vec = np.zeros((len(self.actions_dict), 1))
         self.action_vec[action] = 1
 
-        self.build_state()
+        self._build_state()
 
         return action, torch.Tensor(self.state), reward, done, correct_label
 
@@ -221,15 +221,15 @@ class SingleAgentEnv(object):
             initial_value) / num_iterations * 6)
         return initial_value * (exp_decay ** n_iter)
 
-    def get_exp_decaying_eps(self, n_episode):
+    def _get_exp_decaying_eps(self, n_episode):
         exp_decay = np.exp(-np.log(self.exp_dec_steepness) / self.n_episodes_per_phase * 6)
         return (self.exp_dec_steepness * (exp_decay ** n_episode)) / self.exp_dec_steepness
 
-    def generate_label(self):
+    def _generate_label(self):
         # generate label associated with observation
         self.obs_label = self.obs.sum(dtype=int)
 
-    def generate_observation(self):
+    def _generate_observation(self):
         """
         The mehtod creates the scene observed by the agent in the
         current episode. Different levels of variability in the
@@ -295,10 +295,9 @@ class SingleAgentEnv(object):
                             "No space left in the scene to draw a square of"
                             f"shape (1,1). {n} objects drawn."
                         )
-                        self.obs_label = n
                         break
 
-        self.obs_label = n_objects
+        self.obs_label = objects_drawn
 
         for coordinate in picture_objects_coordinates:
             self.obs[coordinate] = 1
@@ -400,8 +399,14 @@ class SingleAgentEnv(object):
                     adjacency_point |= set([(x - 1, y - 1)])
 
                 if ((len(intersection_points & picture_squares_coordinates) == 0)
-                        and (len(adjacency_point & picture_squares_coordinates) == 0)):
+                        and (len(adjacency_points & picture_squares_coordinates) == 0)):
                     return True
+        return False
+
+    @staticmethod
+    def _point_out_of_picture(point: tuple) -> bool:
+        if (point[0] < 0) or (point[1] < 0):
+            return True
         return False
 
     @staticmethod
@@ -421,7 +426,7 @@ class SingleAgentEnv(object):
 
         print(scene)
 
-    def softmax_action_selection(self, q_values, temperature):
+    def _softmax_action_selection(self, q_values, temperature):
         """Select an action given the q_values according to the
         softmax action selection method.
 
@@ -458,7 +463,7 @@ class SingleAgentEnv(object):
 
         return action
 
-    def epsilon_greedy_action_selection(self, q_values, eps=.1):
+    def _epsilon_greedy_action_selection(self, q_values, eps=.1):
         n_actions = len(self.actions_dict)
 
         sample = random.random()
@@ -470,7 +475,7 @@ class SingleAgentEnv(object):
 
         return action
 
-    def render(self, display_id=None):
+    def _render(self, display_id=None):
         img_height = 200
         self.obs_img = Image.fromarray(self.obs * 255).resize((img_height, img_height), resample=0)
         self.obs_img = utils.add_grid_lines(self.obs_img, self.obs)
@@ -512,7 +517,7 @@ class SingleAgentEnv(object):
         return total_img
 
     def reset(self):
-        self.generate_observation()
+        self._generate_observation()
 
         # reset external representation
         self.ext_repr = ExternalRepresentation(self.obs_dim, self.actions_dict)
@@ -531,7 +536,7 @@ class SingleAgentEnv(object):
             self.random_finger_position
         )
         # reset whole state
-        self.build_state()
+        self._build_state()
 
         # reset counter of steps in an environment with a given scene
         self.step_counter = 0
@@ -543,7 +548,7 @@ class SingleAgentEnv(object):
 
         return torch.Tensor(self.state)
 
-    def build_state(self):
+    def _build_state(self):
         self.state = np.stack([[self.obs,
                                 self.finger_layer_scene.fingerlayer,
                                 self.finger_layer_repr.fingerlayer, self.ext_repr.external_representation]])
@@ -564,7 +569,7 @@ class SingleAgentEnv(object):
         return hash(string_state)
 
     @staticmethod
-    def get_curiosity_reward(n_visits: int, bending=.4, scale=.1) -> float:
+    def _get_curiosity_reward(n_visits: int, bending=.4, scale=.1) -> float:
         # the greater the bending parameter, the less bended is the curve
         # the greater the scale parameter, the larger the scale of the curve
         # with the default parameters, the prize for unvisited states is .1
