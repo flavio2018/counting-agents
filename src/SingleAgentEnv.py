@@ -398,17 +398,18 @@ class SingleAgentEnv(object):
             True if a square of shape (square_size, square_size) can
             fit, False otherwise.
         """
-        for col_start in range(0, self.obs_dim - square_size):
+        for col_start in range(0, self.obs_dim - square_size + 1):
             column_values = range(col_start, col_start + square_size)
-            for row_start in range(0, self.obs_dim - square_size):
+            for row_start in range(0, self.obs_dim - square_size + 1):
                 row_values = range(row_start, row_start + square_size)
                 intersection_points = set(product(column_values, row_values))
-                adjacency_point = set()
+                adjacency_points = set()
                 for (x, y) in intersection_points:
-                    adjacency_point |= set([(x + 1, y + 1)])
-                    adjacency_point |= set([(x + 1, y - 1)])
-                    adjacency_point |= set([(x - 1, y + 1)])
-                    adjacency_point |= set([(x - 1, y - 1)])
+                    candidate_adjacent_points = [(x, y + 1), (x, y - 1), (x - 1, y), (x + 1, y)]
+                    for point in candidate_adjacent_points:
+                        if self._point_out_of_picture(point) or (point in intersection_points):
+                            continue
+                        adjacency_points |= set([point])
 
                 if ((len(intersection_points & picture_squares_coordinates) == 0)
                         and (len(adjacency_points & picture_squares_coordinates) == 0)):
