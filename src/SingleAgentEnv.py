@@ -657,8 +657,33 @@ class ExternalRepresentation:
 if __name__ == '__main__':
     from src.Reward import Reward
 
-    reward = Reward(**{'bad_label_punishment': False, 'curiosity': False, 'time_penalty': False})
-    env = SingleAgentEnv(reward, 3, 1, 4, 8, 1, 10, 1, 4)
+    reward_params = {
+        'bad_label_punishment': False,
+        'curiosity': False,
+        'time_penalty': False,
+    }
 
-    print(env.obs)
-    print(env.obs_label)
+    env_params = {
+        'max_CL_objects':           6,
+        'CL_phases':                1,
+        'max_episode_objects':      6,
+        'obs_dim':                  6,
+        'max_episode_length':       2,
+        'default_eps':              .05,
+        'n_actions':                9 + 3,
+        'n_episodes_per_phase':     40000,
+        'max_object_size':          5,
+        'generate_random_nobj':     False,
+        'random_object_size':       True,
+        'random_finger_position':   False,
+        'exponential_decay':        True,
+        'exp_dec_steepness':        30,
+    }
+
+    reward = Reward(**reward_params)
+    env = SingleAgentEnv(reward, **env_params)
+
+    while(1):
+        print(env.obs)
+        print(env.obs_label)
+        env.reset()
