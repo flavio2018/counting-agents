@@ -118,12 +118,18 @@ def optimize_model(replay_memory, batch_size, policy_net, target_net, loss_fn, o
     if len(replay_memory) < batch_size:
         #print(f"Replay memory size ({len(replay_memory)}) is less than batch size ({batch_size})")
         return None
-    
-    transitions = replay_memory.sample(batch_size)
-    # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
-    # detailed explanation). This converts batch-array of Transitions
-    # to Transition of batch-arrays.
-    batch = Transition(*zip(*transitions))
+
+    non_final_next_states_list = []
+    # sample from memory until we get a sample that has at least one non-final
+    # next state (i.e. an episode that did not end in one timestep)
+    while len(non_final_next_states_list) == 0:
+        transitions = replay_memory.sample(batch_size)
+        # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
+        # detailed explanation). This converts batch-array of Transitions
+        # to Transition of batch-arrays.
+        batch = Transition(*zip(*transitions))
+        non_final_next_states_list = [s for s in batch.next_state
+                                      if s is not None]
     
     state_batch = torch.cat(batch.state)
     action_batch = torch.cat(batch.action)
