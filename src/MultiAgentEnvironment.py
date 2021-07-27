@@ -52,15 +52,15 @@ class MultiAgentEnvironment():
 
 
         if(self.timestep==self.max_episode_length):
-            self.agents[0].fingerlayer.fingerlayer = 0.5 * np.ones((self.agents[0].obs_dim, self.agents[0].obs_dim))
-            self.agents[1].fingerlayer.fingerlayer = 0.5 * np.ones((self.agents[1].obs_dim, self.agents[1].obs_dim))
+            self.agents[0].fingerlayer.fingerlayer = 0.5 * np.ones(self.agents[0].ext_shape)
+            self.agents[1].fingerlayer.fingerlayer = 0.5 * np.ones(self.agents[0].ext_shape)
 
         if (self.timestep == self.max_episode_length):
             self.agents[0].ext_repr_other = self.agents[1].ext_repr.externalrepresentation
             self.agents[1].ext_repr_other = self.agents[0].ext_repr.externalrepresentation
         else:
-            self.agents[0].ext_repr_other = 0.5 * np.ones((self.agents[0].obs_dim, self.agents[0].obs_dim))
-            self.agents[1].ext_repr_other = 0.5 * np.ones((self.agents[1].obs_dim, self.agents[0].obs_dim))
+            self.agents[0].ext_repr_other = 0.5 * np.ones(self.agents[0].ext_shape)
+            self.agents[1].ext_repr_other = 0.5 * np.ones(self.agents[0].ext_shape)
 
         self.agents[0].experiment_specific_setup.update_state(self.agents[0])
         self.agents[1].experiment_specific_setup.update_state(self.agents[1])
@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
 def calc_max_episode_length(n_objects, observation):
     if (observation == 'spatial'):
-        return 1 * n_objects - 1
+        return 2 * (n_objects-1)
     elif (observation == 'temporal'):
         if(n_objects<=3):
             return 1*n_objects+1

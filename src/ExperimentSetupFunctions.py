@@ -9,10 +9,9 @@ def reward_done_function_classify(reward_dict, agents):
         if (agents.params['observation'] == 'spatial'):
             for agent in agents.agents:
                 if (agent.all_actions_dict[np.where(agent.action == 1)[0][0]] in agent.ext_repr.actions or Is_agent_moved(agent)):
-                    reward += reward_dict['moved_or_mod_ext']
-                # Punish answering before answer time
-                if (Is_agent_did_action(agent, 'larger') or Is_agent_did_action(agent, 'smaller')):
-                    reward += reward_dict['gave_answer_before_answer_time']
+                    reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+                if (Is_agent_said_number(agent)):
+                    reward += reward_dict['said_number_before_last_time_step'] / (agent.max_episode_length )
     else:
         first_said_correct = False
         second_said_correct = False
@@ -35,12 +34,14 @@ def reward_done_function_comparison(reward_dict, agents):
     reward = 0.0
 
     if (agents.timestep <= agents.max_episode_length):
-        for agent in agents.agents:
-            if (agent.all_actions_dict[np.where(agent.action==1)[0][0]] in agent.ext_repr.actions or Is_agent_moved(agent)):
-                reward += reward_dict['moved_or_mod_ext']
-            # Punish answering before answer time
-            if (Is_agent_did_action(agent, 'larger') or  Is_agent_did_action(agent, 'smaller')):
-                reward += reward_dict['gave_answer_before_answer_time']
+        if(agents.params['observation']=='temporal'):
+            reward += reward_interaction_during_events(reward_dict, agents)
+        if (agents.params['observation'] == 'spatial'):
+            for agent in agents.agents:
+                if (agent.all_actions_dict[np.where(agent.action == 1)[0][0]] in agent.ext_repr.actions or Is_agent_moved(agent)):
+                    reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+                if (Is_agent_said_number(agent)):
+                    reward += reward_dict['said_number_before_last_time_step'] / (agent.max_episode_length )
     else:
         if(agents.agents[0].n_objects == agents.agents[1].n_objects):
             if(Is_agent_did_action(agents.agents[0], 'equal') and Is_agent_did_action(agents.agents[1], 'equal')):
@@ -67,7 +68,7 @@ def reward_done_function_reproduce(reward_dict, agent):
     reward = 0.0
     if (agent.timestep <= agent.max_episode_length):
         if (agent.all_actions_dict[np.where(agent.action==1)[0][0]] in agent.ext_repr.actions or Is_agent_moved(agent)):
-            reward += reward_dict['moved_or_mod_ext']
+            reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
     else:
         if (agent.ext_repr.externalrepresentation.sum() == agent.obs.sum()):
             reward += reward_dict['main_reward']
@@ -93,7 +94,7 @@ def reward_interaction_during_events(reward_dict, agents):
                     else:
                         reward -= reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
                 if (Is_agent_said_number(agent)):
-                    reward += reward_dict['said_number_before_last_time_step']
+                    reward += reward_dict['said_number_before_last_time_step'] / (agent.max_episode_length )
 
         return reward
 
@@ -104,33 +105,34 @@ def reward_interaction_during_events(reward_dict, agents):
 
 def obs_reset_function_spatial(agent):
     # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
-    agent.obs = np.zeros((agent.obs_dim, agent.obs_dim))
+    agent.obs = np.zeros(agent.obs_shape)
     agent.obs.ravel()[np.random.choice(agent.obs.size, agent.n_objects, replace=False)] = 1
 
 def obs_reset_function_empty(agent):
     # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
-    agent.obs = np.zeros((agent.obs_dim, agent.obs_dim))
+    agent.obs = np.zeros(agent.obs_shape)
     agent.default_obs = agent.obs
     agent.event_timesteps =  calc_event_timesteps(agent.n_objects, max_episode_length=agent.max_episode_length) #
-    agent.event_obs = np.zeros((agent.obs_dim, agent.obs_dim))
-    middle = agent.obs_dim//2
-    for x in range(middle - 1, middle+1):
-        for y in range(middle - 1, middle+1):
+    agent.event_obs = np.zeros(agent.obs_shape)
+    middle_x = agent.obs_shape[0]//2
+    middle_y = agent.obs_shape[1] // 2
+    for x in range(middle_x - 1, middle_x+1):
+        for y in range(middle_y - 1, middle_y+1):
             agent.event_obs[x, y] = 1
 
 def ext_reset_function_empty(agent):
     # Initialize external representation (the piece of paper the agent is writing on)
-    agent.ext_repr.externalrepresentation = np.zeros((agent.obs_dim, agent.obs_dim))
-    agent.ext_repr_other = np.zeros((agent.obs_dim, agent.obs_dim))
+    agent.ext_repr.externalrepresentation = np.zeros(agent.ext_shape)
+    agent.ext_repr_other = np.zeros(agent.ext_shape)
 
 def ext_reset_function_abacus(agent):
     # Initialize external representation (the piece of paper the agent is writing on)
-    agent.ext_repr.externalrepresentation = np.zeros((agent.obs_dim, agent.obs_dim))
-    agent.ext_repr_other = np.zeros((agent.obs_dim, agent.obs_dim))
+    agent.ext_repr.externalrepresentation = np.zeros(agent.ext_shape)
+    agent.ext_repr_other = np.zeros(agent.ext_shape)
 
 def finger_reset_function_top_left(agent):
     # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
-    agent.fingerlayer.fingerlayer = np.zeros((agent.obs_dim, agent.obs_dim))
+    agent.fingerlayer.fingerlayer = np.zeros(agent.ext_shape)
     agent.fingerlayer.fingerlayer[0, 0] = 1
 
 

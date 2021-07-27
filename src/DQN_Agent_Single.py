@@ -4,7 +4,7 @@ Code taken from: https://github.com/nalepae/cs285/blob/master/hw3/cs285/agents/d
 import numpy as np
 from QNets import N_Concat_CNNs, CNN
 import torch
-from ReplayMemory import ReplayMemory
+from ReplayMemory import ReplayMemory, NaivePrioritizedBuffer
 import pytorch_utils as ptu
 import torch.nn.functional as F
 
@@ -24,14 +24,18 @@ class DQN_Agent_Single(object):
 
         # Observation and action sizes for individual agents
         self.ob_dim  = self.env.state.shape  # Assumes that all agents have same state-dim as agent[0]
+        self.ext_shape = self.env.ext_shape
+        dimmy = 1 if self.ext_shape[1] == 1 else 2
+
         print("ob_dim: ", self.ob_dim)
         n_channels, screen_height, screen_width = self.ob_dim
         self.ac_dim = self.env.action.shape
         self.n_actions = self.ac_dim[0]
 
+
         # Network initializations
-        self.policy_net = CNN(n_channels, self.n_actions, example_input=self.env.state).to(self.device)
-        self.target_net = CNN(n_channels, self.n_actions, example_input=self.env.state).to(self.device)
+        self.policy_net = CNN(n_channels, self.n_actions, example_input=self.env.state, dim=dimmy).to(self.device)
+        self.target_net = CNN(n_channels, self.n_actions, example_input=self.env.state, dim=dimmy).to(self.device)
 
         if(agent_params['Is_pretrained_model']):
             self.policy_net.load_state_dict(torch.load(agent_params['pretrained_model_path']))
@@ -50,7 +54,10 @@ class DQN_Agent_Single(object):
         #self.optimizer = torch.optim.SGD(self.policy_net.parameters(), lr=LEARNING_RATE, momentum=0.9)
 
         # Memory
-        self.memory = ReplayMemory(self.params['MEMORY_CAPACITY'])
+        if self.params['PrioratizedReplayMemory']:
+            self.memory = NaivePrioritizedBuffer(self.params['MEMORY_CAPACITY'])
+        else:
+            self.memory = ReplayMemory(self.params['MEMORY_CAPACITY'])
         self.eps_threshold = 0
 
         # Eps-greedy parameters
@@ -92,7 +99,7 @@ class DQN_Agent_Single(object):
         GAMMA = self.params['GAMMA']
         if len(self.memory) < self.params['BATCH_SIZE']:
             return
-        transitions = self.memory.sample(self.params['BATCH_SIZE'])
+        transitions, indices, weights = self.memory.sample(self.params['BATCH_SIZE'])
         # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
         # detailed explanation). This converts batch-array of Transitions
         # to Transition of batch-arrays.
@@ -125,9 +132,15 @@ class DQN_Agent_Single(object):
         # Compute Huber loss
         #criterion = nn.SmoothL1Loss()
         #loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
-        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
-
+        #loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+        batch_weights = torch.from_numpy(weights)
+        loss_i = batch_weights * (state_values - expected_state_action_values) ** 2
+        if self.params['PrioratizedReplayMemory']:
+            batch_indices = torch.from_numpy(indices)
+            prios = loss_i + 1e-5
+            self.memory.update_priorities(batch_indices, prios.data.cpu().numpy())
         # Optimize the model
+        loss = torch.sum(loss_i)
         self.optimizer.zero_grad()
         loss.backward()
         #for param in self.policy_net.parameters():

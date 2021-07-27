@@ -16,7 +16,7 @@ class ExperimentSetup():
     ExtResetFunctionDict = {
         'MoveAndWrite': ext_reset_function_empty,
         'Abacus': ext_reset_function_abacus,
-        'WriteCoord': None,
+        'WriteCoord': ext_reset_function_empty,
         'SpokenWords': None
     }
 
@@ -65,7 +65,7 @@ class ExperimentSetup():
 
     def reset(self, agent):
         self.obs_reset_function(agent)
-        agent.ext_repr.init_externalrepresentation(agent.obs_dim)
+        agent.ext_repr.init_externalrepresentation(agent.ext_shape)
         agent.ext_repr_other = agent.ext_repr.externalrepresentation
         self.finger_reset_function(agent)
 
@@ -126,14 +126,14 @@ class SpatialComparisonMoveAndWrite():
 
     def reset(self, agent):
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
-        agent.obs = np.zeros((agent.obs_dim, agent.obs_dim))
+        agent.obs = np.zeros(agent.obs_shape)
         agent.obs.ravel()[np.random.choice(agent.obs.size, agent.n_objects, replace=False)] = 1
 
         # Initialize external representation (the piece of paper the agent is writing on)
-        agent.ext_repr.externalrepresentation = np.zeros((agent.obs_dim, agent.obs_dim))
+        agent.ext_repr.externalrepresentation = np.zeros(agent.obs_shape)
 
         # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
-        agent.fingerlayer.fingerlayer = np.zeros((agent.obs_dim, agent.obs_dim))
+        agent.fingerlayer.fingerlayer = np.zeros(agent.obs_shape)
         agent.fingerlayer.fingerlayer[0, 0] = 1
 
     def env_update(self):
@@ -197,16 +197,16 @@ class SpatialClassifyMoveAndWrite():
 
     def reset(self, agent):
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
-        agent.obs = np.zeros((agent.obs_dim, agent.obs_dim))
+        agent.obs = np.zeros(agent.obs_shape)
         agent.obs.ravel()[np.random.choice(agent.obs.size, agent.n_objects, replace=False)] = 1
 
         # Initialize external representation (the piece of paper the agent is writing on)
-        agent.ext_repr.externalrepresentation = np.zeros((agent.obs_dim, agent.obs_dim))
+        agent.ext_repr.externalrepresentation = np.zeros(agent.obs_shape)
         # Empty external representation of other agent
-        agent.ext_repr_other = np.zeros((agent.obs_dim, agent.obs_dim))
+        agent.ext_repr_other = np.zeros(agent.ext_shape)
 
         # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
-        agent.fingerlayer.fingerlayer = np.zeros((agent.obs_dim, agent.obs_dim))
+        agent.fingerlayer.fingerlayer = np.zeros(agent.obs_shape)
         agent.fingerlayer.fingerlayer[0, 0] = 1
 
     def env_update(self):

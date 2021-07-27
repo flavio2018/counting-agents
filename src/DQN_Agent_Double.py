@@ -4,7 +4,7 @@ Code taken from: https://github.com/nalepae/cs285/blob/master/hw3/cs285/agents/d
 import numpy as np
 from QNets import N_Concat_CNNs
 import torch
-from ReplayMemory import ReplayMemory
+from ReplayMemory import ReplayMemory, NaivePrioritizedBuffer
 import pytorch_utils as ptu
 import torch.nn.functional as F
 
@@ -25,14 +25,16 @@ class DQN_Agent_Double(object):
 
         # Observation and action sizes for individual agents
         self.ob_dim  = self.env.states[0].shape  # Assumes that all agents have same state-dim as agent[0]
+        self.ext_shape = self.env.agents[0].ext_shape
+        dimmy = 1 if self.ext_shape[1] == 1 else 2
         print("ob_dim: ", self.ob_dim)
         n_channels, screen_height, screen_width = self.ob_dim
         self.ac_dim = self.env.agents[0].action.shape
         self.n_actions = self.ac_dim[0]
 
         # Network initializations
-        self.policy_net = N_Concat_CNNs(n_channels, self.n_actions, shared_policy=True, example_input = self.env.states).to(self.device)
-        self.target_net = N_Concat_CNNs(n_channels, self.n_actions, shared_policy=True, example_input = self.env.states).to(self.device)
+        self.policy_net = N_Concat_CNNs(n_channels, self.n_actions, shared_policy=True, example_input = self.env.states, dim=dimmy).to(self.device)
+        self.target_net = N_Concat_CNNs(n_channels, self.n_actions, shared_policy=True, example_input = self.env.states, dim=dimmy).to(self.device)
 
         if(agent_params['Is_pretrained_model']):
             self.policy_net.load_state_dict(torch.load(agent_params['pretrained_model_path']))
@@ -50,7 +52,10 @@ class DQN_Agent_Double(object):
         #self.optimizer = torch.optim.SGD(self.policy_net.parameters(), lr=LEARNING_RATE, momentum=0.9)
 
         # Memory
-        self.memory = ReplayMemory(self.params['MEMORY_CAPACITY'])
+        if self.params['PrioratizedReplayMemory']:
+            self.memory = NaivePrioritizedBuffer(self.params['MEMORY_CAPACITY'])
+        else:
+            self.memory = ReplayMemory(self.params['MEMORY_CAPACITY'])
         self.eps_threshold = 0
 
         # Eps-greedy parameters
@@ -89,7 +94,7 @@ class DQN_Agent_Double(object):
     def optimize_model(self):
         if len(self.memory) < self.params['BATCH_SIZE']:
             return
-        transitions = self.memory.sample(self.params['BATCH_SIZE'])
+        transitions, indices, weights = self.memory.sample(self.params['BATCH_SIZE'])
         # Transpose the batch (see https://stackoverflow.com/a/19343/3343043 for
         # detailed explanation). This converts batch-array of Transitions
         # to Transition of batch-arrays.
@@ -106,6 +111,8 @@ class DQN_Agent_Double(object):
         non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
         state_batch = torch.cat(batch.state)
         reward_batch = torch.stack(batch.reward)
+        #weights_batch = torch.stack(batch.weights)
+        #indices_batch = torch.stack(batch.indices)
         state_action_values = self.policy_net(state_batch)
         state_action_values_tensor = torch.stack(state_action_values).transpose(0,1)
         action_tensor = torch.stack(batch.action).type(torch.int64)
@@ -121,8 +128,15 @@ class DQN_Agent_Double(object):
         #next_state_values = q_sp1_tensor_max_mean                     ### !!!! without done-masking!!!!
         expected_state_action_values = (next_state_values * self.params['GAMMA']) + reward_batch.squeeze(1)
 
-        loss = F.mse_loss(state_values, expected_state_action_values)
+        #loss = F.mse_loss(state_values, expected_state_action_values)
+        batch_weights = torch.from_numpy(weights)
+        loss_i = batch_weights * (state_values - expected_state_action_values) ** 2
+        if self.params['PrioratizedReplayMemory']:
+            batch_indices = torch.from_numpy(indices)
+            prios = loss_i + 1e-5
+            self.memory.update_priorities(batch_indices, prios.data.cpu().numpy())
         # Optimize the model
+        loss = torch.sum(loss_i)
         self.optimizer.zero_grad()
         loss.backward()
         #for param in self.policy_net.parameters():

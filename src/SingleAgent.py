@@ -31,13 +31,14 @@ class SingleRLAgent():
 
         model=None
         self.n_objects = random.randint(1, self.max_objects) if(n_objects is None) else n_objects
-        self.obs_dim = agent_params['obs_dim']
+        self.obs_shape = agent_params['obs_shape']
+        self.ext_shape = agent_params['ext_shape']
         
         # Initialize external representation (the piece of paper the agent is writing on)
-        self.ext_repr = choose_external_representation(self.experiment_specific_setup.external_repr_tool, self.obs_dim) #ExternalRepresentation(self.obs_dim)
+        self.ext_repr = choose_external_representation(self.experiment_specific_setup.external_repr_tool, self.ext_shape) #ExternalRepresentation(self.obs_dim)
 
         # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
-        self.fingerlayer = FingerLayer(self.obs_dim)
+        self.fingerlayer = FingerLayer(self.ext_shape)
 
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         max_n = self.params['max_max_objects'] if self.params['curriculum_learning'] else self.params['max_objects']
@@ -105,29 +106,34 @@ class SingleRLAgent():
 
 
     def render(self, display_id=None):
-        img_height=200
-        self.obs_img = Image.fromarray(self.obs*255).resize( (img_height,img_height), resample=0)
+        img_width = 50
+        img_height = 50
+        obs_img_shape = (img_width * self.obs_shape[1], img_height * self.obs_shape[0])
+        ext_img_shape = (img_width * self.ext_shape[1], img_height * self.obs_shape[0])
+
+
+        self.obs_img = Image.fromarray(self.obs*255).resize( obs_img_shape, resample=0)
         self.obs_img = utils.add_grid_lines(self.obs_img, self.obs)
         self.obs_img = self.obs_img.transpose(Image.TRANSPOSE)
         self.obs_img = utils.annotate_below(self.obs_img, "Observation")
 
-        self.action_img = Image.fromarray(self.action*255).resize( (int(img_height/4),img_height), resample=0)
+        self.action_img = Image.fromarray(self.action*255).resize( (int(img_height),img_height * self.obs_shape[1]), resample=0)
         self.action_img = utils.add_grid_lines(self.action_img, np.reshape(self.action, (-1, 1)))
         self.action_img = utils.annotate_nodes(self.action_img, self.all_actions_list)
         self.action_img = utils.annotate_below(self.action_img, "Action")
 
-        self.ext_repr_img = Image.fromarray(self.ext_repr.externalrepresentation*255).resize( (img_height,img_height), resample=0)
+        self.ext_repr_img = Image.fromarray(self.ext_repr.externalrepresentation*255).resize( ext_img_shape, resample=0)
         self.ext_repr_img = utils.add_grid_lines(self.ext_repr_img, self.ext_repr.externalrepresentation)
         self.ext_repr_img = self.ext_repr_img.transpose(Image.TRANSPOSE)
         self.ext_repr_img = utils.annotate_below(self.ext_repr_img, "External representation")
 
         if hasattr(self, 'ext_repr_other'):
-            self.ext_repr_other_img = Image.fromarray(self.ext_repr_other*255).resize( (img_height,img_height), resample=0)
+            self.ext_repr_other_img = Image.fromarray(self.ext_repr_other*255).resize( ext_img_shape, resample=0)
             self.ext_repr_other_img = utils.add_grid_lines(self.ext_repr_other_img, self.ext_repr_other)
             self.ext_repr_other_img = self.ext_repr_other_img.transpose(Image.TRANSPOSE)
             self.ext_repr_other_img = utils.annotate_below(self.ext_repr_other_img, "External-Other representation")
 
-        self.finger_img = Image.fromarray(self.fingerlayer.fingerlayer*255).resize( (img_height,img_height), resample=0)
+        self.finger_img = Image.fromarray(self.fingerlayer.fingerlayer*255).resize( ext_img_shape, resample=0)
         self.finger_img = utils.add_grid_lines(self.finger_img, self.fingerlayer.fingerlayer)
         self.finger_img = self.finger_img.transpose(Image.TRANSPOSE)
         self.finger_img = utils.annotate_below(self.finger_img, "Finger layer")
@@ -207,11 +213,11 @@ class FingerLayer():
     """
     This class implements the finger movement part of the environment.
     """
-    def __init__(self, dim):
-        self.dim = dim
-        self.fingerlayer = np.zeros((dim, dim))
-        self.max_x = dim-1
-        self.max_y = dim-1
+    def __init__(self, ext_shape):
+        self.ext_shape = ext_shape
+        self.fingerlayer = np.zeros(ext_shape)
+        self.max_x = ext_shape[0]-1
+        self.max_y = ext_shape[1]-1
         self.pos_x = 0 #random.randint(0, dim-1)
         self.pos_y = 0 #random.randint(0, dim-1)
         self.fingerlayer[self.pos_x, self.pos_y] = 1
@@ -234,17 +240,17 @@ class FingerLayer():
         move_action_str = self.actions[move_action]
         if(move_action_str=="right"):
             #if(self.pos_x<self.max_x):
-            self.pos_x = (self.pos_x + 1) % self.dim
+            self.pos_x = (self.pos_x + 1) % self.ext_shape[0]
         elif(move_action_str=="left"):
             #if(self.pos_x > 0):
-            self.pos_x = (self.pos_x - 1) % self.dim
+            self.pos_x = (self.pos_x - 1) % self.ext_shape[0]
         elif(move_action_str=="up"):
             #if(self.pos_y > 0):
-            self.pos_y = (self.pos_y - 1) % self.dim
+            self.pos_y = (self.pos_y - 1) % self.ext_shape[1]
         elif(move_action_str=="down"):
             #if (self.pos_y < self.max_y):
-            self.pos_y = (self.pos_y + 1) % self.dim
-        self.fingerlayer = np.zeros((self.dim, self.dim))
+            self.pos_y = (self.pos_y + 1) % self.ext_shape[1]
+        self.fingerlayer = np.zeros(self.ext_shape)
         self.fingerlayer[self.pos_x, self.pos_y] = 1
 
 
@@ -264,9 +270,9 @@ class MoveAndWrite():
     """
     This class implements the external representation in the environment.
     """
-    def __init__(self, dim):
-        self.dim = dim
-        self.init_externalrepresentation(dim)
+    def __init__(self, ext_shape):
+        self.ext_shape = ext_shape
+        self.init_externalrepresentation(ext_shape)
         self.actions = {
             0: 'mod_point',      # Keys will be overwritten when merged with another action-space
         }
@@ -275,8 +281,8 @@ class MoveAndWrite():
             str_to_str[value] = value
         self.actions.update(str_to_str)
 
-    def init_externalrepresentation(self, dim):
-        self.externalrepresentation = np.zeros((dim, dim))
+    def init_externalrepresentation(self, ext_shape):
+        self.externalrepresentation = np.zeros(ext_shape)
 
     def draw(self, draw_pixels):
         self.externalrepresentation += draw_pixels
@@ -290,15 +296,41 @@ class MoveAndWrite():
 
 
 
+class WriteCoord():
+    """
+    This class implements the external representation in the environment.
+    Right now this external tool is only possible for 1D.
+    """
+    def __init__(self, ext_shape):
+        self.ext_shape = ext_shape
+        self.init_externalrepresentation(ext_shape)
+        self.actions = {}
+        for coord in range(ext_shape[0]):
+            self.actions[coord] = "write_on_" + str(coord)
+        str_to_str = {}
+        for key,value in self.actions.items():
+            str_to_str[value] = value
+        self.actions.update(str_to_str)
+
+    def init_externalrepresentation(self, ext_shape):
+        self.externalrepresentation = np.zeros(ext_shape)
+
+    def step(self, action, agent):
+        # This line implements if ext_repr[coord]==0 --> set it to 1. if==1 set to 0.
+        coord_int = int(action[-1])
+        self.externalrepresentation[coord_int, 0] = -self.externalrepresentation[coord_int, 0] + 1
+
+
+
 class Abacus():
     """
     This class implements the external representation in the environment.
     """
-    def __init__(self, dim):
-        self.dim = dim
-        self.externalrepresentation = np.zeros((dim, dim))
+    def __init__(self, ext_shape):
+        self.ext_shape = ext_shape
+        self.externalrepresentation = np.zeros(ext_shape)
 
-        self.init_externalrepresentation(dim)
+        self.init_externalrepresentation(ext_shape)
 
         self.actions = {
             0: 'move_token_left',      # Keys will be overwritten when merged with another action-space
@@ -310,10 +342,10 @@ class Abacus():
             str_to_str[value] = value
         self.actions.update(str_to_str)
 
-    def init_externalrepresentation(self, dim):
-        self.token_pos = np.zeros(dim, dtype=int)  # gives column-number of each token in each row. start out all in the left
-        self.externalrepresentation = np.zeros((dim, dim))
-        for rowy in range(self.dim):
+    def init_externalrepresentation(self, ext_shape):
+        self.token_pos = np.zeros(ext_shape, dtype=int)  # gives column-number of each token in each row. start out all in the left
+        self.externalrepresentation = np.zeros(ext_shape)
+        for rowy in range(self.ext_shape[1]):
             self.externalrepresentation[self.token_pos[rowy], rowy] = 1
 
     def step(self, action, agent):
@@ -326,11 +358,11 @@ class Abacus():
 
         current_row = agent.fingerlayer.pos_y
         if(action == 'move_token_left'):
-            self.token_pos[current_row] = (self.token_pos[current_row] - 1) % self.dim
+            self.token_pos[current_row] = (self.token_pos[current_row] - 1) % self.ext_shape[0]
         if(action == 'move_token_right'):
-            self.token_pos[current_row] = (self.token_pos[current_row] + 1) % self.dim
+            self.token_pos[current_row] = (self.token_pos[current_row] + 1) % self.ext_shape[0]
 
-        for col in range(self.dim):
+        for col in range(self.ext_shape[0]):
             self.externalrepresentation[col, current_row] = 0
         self.externalrepresentation[self.token_pos[current_row], current_row] = 1
 
@@ -367,7 +399,7 @@ class OtherInteractions():
 
 def calc_max_episode_length(n_objects, observation):
     if (observation == 'spatial'):
-        return 1 * n_objects - 1
+        return 2 * (n_objects-1)
     elif (observation == 'temporal'):
         if(n_objects<=3):
             return 1*n_objects+1
@@ -378,16 +410,3 @@ def calc_max_episode_length(n_objects, observation):
         return max_time_length
 
 
-
-
-# if __name__ == '__main__':
-#     agent_params = {
-#         'max_objects': 9,
-#         'obs_dim': 4,
-#     }
-#
-#
-#     agent = SingleRLAgent(agent_params)
-#     agent.render()
-#     action = 'mod_point'
-#     agent.step(action)

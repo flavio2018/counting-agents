@@ -182,7 +182,7 @@ def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofa
             ext_repr_img = Image.fromarray(agenty.ext_repr.externalrepresentation * 255).resize((img_height, img_height), resample=0)
             ext_repr_img = utils.add_grid_lines(ext_repr_img, agenty.ext_repr.externalrepresentation)
             ext_repr_img = ext_repr_img.transpose(Image.TRANSPOSE)
-            space_img = Image.fromarray(np.ones(agenty.obs_dim, dtype=np.uint8)*255).resize((img_height//4, img_height), resample=0)
+            space_img = Image.fromarray(np.ones(agenty.ext_shape[1], dtype=np.uint8)*255).resize((img_height//4, img_height), resample=0)
             ext_repr_img = utils.concat_imgs_h([ext_repr_img, space_img], dist=0)
             annotaty = str(agenty.n_objects)
             ext_repr_img = utils.annotate_below(ext_repr_img, annotaty).convert('RGB')
