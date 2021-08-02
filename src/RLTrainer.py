@@ -1,5 +1,4 @@
 import time
-
 from collections import OrderedDict
 import pickle
 import numpy as np
@@ -10,7 +9,7 @@ from tensorboardX import SummaryWriter
 import timeit
 import pytorch_utils as ptu
 from datetime import timedelta
-from ExperimentSetups import *
+#from ExperimentSetups import *
 from DQN_Agent_Single import DQN_Agent_Single
 from DQN_Agent_Double import DQN_Agent_Double
 from ReplayMemory import ReplayMemory
@@ -49,7 +48,7 @@ class RL_Trainer(object):
         writingOn = "Experiment_Parameters"
         writer_text = str(self.params).replace(',', '<br/>')
         writer.add_text(writingOn, writer_text, 0)
-        writer_text = str(self.agent.env.experiment_specific_setup.reward_dict).replace(',', '<br/>')
+        writer_text = str(self.agent.env.reward_dict).replace(',', '<br/>')
         writer.add_text(writingOn, writer_text, 0)
         summed_loss = 0
         start_time = timeit.default_timer()
@@ -70,8 +69,8 @@ class RL_Trainer(object):
                      torch.save(self.agent.policy_net.state_dict(), model_path)
                      best_mean_reward = mean_reward_train
 
-            for i in range(5):
-                loss_i = self.agent.optimize_model()
+            #for i in range(5):
+            #    loss_i = self.agent.optimize_model()
             #    print(loss_i)
             loss = self.agent.optimize_model()
 
@@ -161,21 +160,21 @@ def write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, ac
             writer.add_image(writingOn, np.asarray(env.render()).astype(np.uint8).transpose([2, 0, 1]), t_sofar)
 
     if (eval and i_episode == 0):  #
-        if (env.experiment_specific_setup.single_or_multi_agent == 'single'):
+        if (env.params['single_or_multi_agent'] == 'single'):
             actions_during_episode.append(env.all_actions_dict[action])
-        if (env.experiment_specific_setup.single_or_multi_agent == 'multi'):
+        if (env.params['single_or_multi_agent'] == 'multi'):
             if (t_sofar == 1):
                 print("num ", t_sofar, ": ", [env.agents[0].n_objects, env.agents[1].n_objects])
             print("act ", t_sofar, ": ", [env.agents[0].all_actions_dict[action_i] for action_i in action])
 
 def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, ext_repr_imgs, master):
-    if (env.experiment_specific_setup.single_or_multi_agent == 'single'):
+    if (env.params['single_or_multi_agent'] == 'single'):
         if (eval and i_episode == 0):
             print("Acts: ", actions_during_episode)
     if(train_episode % 1000 == 0 or master):
         if(eval and writer is not None):
             img_height = 100
-            if (env.experiment_specific_setup.single_or_multi_agent == 'single'):
+            if (env.params['single_or_multi_agent'] == 'single'):
                 agenty = env
             else:
                 agenty = env.agents[0]

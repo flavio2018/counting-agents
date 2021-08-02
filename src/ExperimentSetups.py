@@ -1,5 +1,5 @@
 import numpy as np
-from ExperimentSetupFunctions import *
+from reward_functions import *
 
 class ExperimentSetup():
     RewardFunctionDict = {

@@ -1,6 +1,8 @@
 import numpy as np
 import random
 
+
+
 def reward_done_function_classify(reward_dict, agents):
     reward = 0.0
     if (agents.timestep <= agents.max_episode_length):
@@ -99,63 +101,18 @@ def reward_interaction_during_events(reward_dict, agents):
         return reward
 
 
+RewardFunctionDict = {
+    'classify': reward_done_function_classify,
+    'compare': reward_done_function_comparison,
+    'reproduce': reward_done_function_reproduce
+}
 
-
-
-
-def obs_reset_function_spatial(agent):
-    # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
-    agent.obs = np.zeros(agent.obs_shape)
-    agent.obs.ravel()[np.random.choice(agent.obs.size, agent.n_objects, replace=False)] = 1
-
-def obs_reset_function_empty(agent):
-    # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
-    agent.obs = np.zeros(agent.obs_shape)
-    agent.default_obs = agent.obs
-    agent.event_timesteps =  calc_event_timesteps(agent.n_objects, max_episode_length=agent.max_episode_length) #
-    agent.event_obs = np.zeros(agent.obs_shape)
-    middle_x = agent.obs_shape[0]//2
-    middle_y = agent.obs_shape[1] // 2
-    for x in range(middle_x - 1, middle_x+1):
-        for y in range(middle_y - 1, middle_y+1):
-            agent.event_obs[x, y] = 1
-
-def ext_reset_function_empty(agent):
-    # Initialize external representation (the piece of paper the agent is writing on)
-    agent.ext_repr.externalrepresentation = np.zeros(agent.ext_shape)
-    agent.ext_repr_other = np.zeros(agent.ext_shape)
-
-def ext_reset_function_abacus(agent):
-    # Initialize external representation (the piece of paper the agent is writing on)
-    agent.ext_repr.externalrepresentation = np.zeros(agent.ext_shape)
-    agent.ext_repr_other = np.zeros(agent.ext_shape)
-
-def finger_reset_function_top_left(agent):
-    # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
-    agent.fingerlayer.fingerlayer = np.zeros(agent.ext_shape)
-    agent.fingerlayer.fingerlayer[0, 0] = 1
-
-
-def update_state_function_with_other_ext_repr(agent):
-    #state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
-    agent.state = np.stack([agent.obs, agent.fingerlayer.fingerlayer, agent.ext_repr.externalrepresentation, agent.ext_repr_other])
-    return agent.state
-
-def update_state_function(agent):
-    #state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
-    agent.state = np.stack([agent.obs, agent.fingerlayer.fingerlayer, agent.ext_repr.externalrepresentation])
-    return agent.state
-
-
-def env_update_function_nothing(agent):
-    pass
-
-def env_update_function_events(agent):
-    if(agent.timestep in agent.event_timesteps):
-        agent.obs = agent.event_obs
-    else:
-        agent.obs = agent.default_obs
-
+ZeroRewardDict = {
+    'moved_or_mod_ext': +0.00,
+    'said_number_before_last_time_step': -0.00,
+    'main_reward': +0.0,
+    'gave_answer_before_answer_time': +0.0
+}
 
 
 

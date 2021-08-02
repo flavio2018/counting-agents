@@ -8,7 +8,8 @@ import numpy as np
 import utils
 import random
 import pytorch_utils as ptu
-from ExperimentSetups import *
+#from ExperimentSetups import *
+from reward_functions import *
 
 # TODO (?): later in utils
 from PIL import ImageFont
@@ -22,31 +23,27 @@ class SingleRLAgent():
         self.params = agent_params
         self.max_objects = n_objects if n_objects is not None else self.params['max_objects']
         self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation']) if 'max_episode_length' not in self.params else self.params['max_episode_length']
-        self.experiment_specific_setup = ExperimentSetup(agent_params) #AgentSetupDict[self.params['Agent_Setup']](agent_params)
+        #self.experiment_specific_setup = ExperimentSetup(agent_params) #AgentSetupDict[self.params['Agent_Setup']](agent_params)
         self.IsPartOfMultiAgents = True if agent_params['single_or_multi_agent'] == 'multi' else False
 
         self.check_reward = True
-        #print("Working with max ", self.max_objects, " objects")
-
-
         model=None
         self.n_objects = random.randint(1, self.max_objects) if(n_objects is None) else n_objects
         self.obs_shape = agent_params['obs_shape']
         self.ext_shape = agent_params['ext_shape']
-        
+        self.obs_external_world = ObsExternalWorld(agent_params['observation'])
+
         # Initialize external representation (the piece of paper the agent is writing on)
-        self.ext_repr = choose_external_representation(self.experiment_specific_setup.external_repr_tool, self.ext_shape) #ExternalRepresentation(self.obs_dim)
+        self.ext_repr = choose_external_representation(self.params['external_repr_tool'], self.ext_shape) #ExternalRepresentation(self.obs_dim)
 
         # Initialize Finger layer: Single 1 in 0-grid of shape dim x dim
         self.fingerlayer = FingerLayer(self.ext_shape)
 
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         max_n = self.params['max_max_objects'] if self.params['curriculum_learning'] else self.params['max_objects']
-        self.otherinteractions = OtherInteractions(self.experiment_specific_setup.task, max_n)
+        self.otherinteractions = OtherInteractions(self.params['task'], max_n)
 
-        #self.state_layers = [self.ext_repr, self.fingerlayer, self.otherinteractions]
         # Initialize action
-        #all_action_dicts = [state_layer.actions for state_layer in self.state_layers]
         self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer.actions, self.otherinteractions.actions])
         self.rewrite_all_action_keys()
         self.action_dim = len(self.all_actions_list)
@@ -56,6 +53,9 @@ class SingleRLAgent():
         self.fps_inv = 500 #ms
         self.is_submitted_ext_repr = False
         self.submitted_ext_repr = None
+
+        self.reward_dict = self.params['reward_dict'] if 'main_reward' in self.params else ZeroRewardDict
+        self.reward_done_function = RewardFunctionDict[self.params['task']]
 
         self.reset(self.n_objects)
 
@@ -83,17 +83,14 @@ class SingleRLAgent():
         # manually by str/int.
         self.action = np.zeros(self.action_dim)
         self.action[self.all_actions_dict_inv[action]] = 1
-        self.state = self.experiment_specific_setup.update_state(self)
+        self.state = self.update_state()
 
-        if(not self.IsPartOfMultiAgents):
-            if(self.check_reward):
-                reward, self.done = self.experiment_specific_setup.reward_done_function(self)
-            else:
-                reward, self.done = 0, False
+        if(not self.IsPartOfMultiAgents and self.check_reward):
+                reward, self.done = self.reward_done_function(self.reward_dict, self)
         else:
-            reward, self.done = 0, False
+                reward, self.done = 0, False
 
-        self.experiment_specific_setup.env_update_function(self)
+        self.env_update_function()
 
         if(self.timestep > self.max_episode_length):
             self.done = True
@@ -104,6 +101,19 @@ class SingleRLAgent():
 
         return self.state, reward, self.done, info
 
+    def update_state(self):
+        if(self.IsPartOfMultiAgents):
+            self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation, self.ext_repr_other])
+        else:
+            self.state = np.stack([self.obs, self.fingerlayer.fingerlayer, self.ext_repr.externalrepresentation])
+        return self.state
+
+    def env_update_function(self):
+        if(self.params['observation'] == 'temporal'):
+            if (agent.timestep in agent.event_timesteps):
+                agent.obs = agent.event_obs
+            else:
+                agent.obs = agent.default_obs
 
     def render(self, display_id=None):
         img_width = 50
@@ -149,14 +159,18 @@ class SingleRLAgent():
     def reset(self, n_objects=None):
         self.n_objects = random.randint(1, self.max_objects) if(n_objects is None) else n_objects
 
-        self.experiment_specific_setup.reset(self)
+        #self.experiment_specific_setup.reset(self)
+        self.ext_repr.reset()
+        self.ext_repr_other = self.ext_repr.externalrepresentation
+        self.fingerlayer.reset()
+        self.obs_external_world.reset(self)
 
         # Initialize whole state space: concatenated observation and external representation
-        self.state = self.experiment_specific_setup.update_state(self)
+        self.state = self.update_state()
 
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         max_n = self.params['max_max_objects'] if self.params['curriculum_learning'] else self.params['max_objects']
-        self.otherinteractions = OtherInteractions(self.experiment_specific_setup.task, max_n)
+        self.otherinteractions = OtherInteractions(self.params['task'], max_n)
 
         self.action = np.zeros(self.action_dim)
 
@@ -209,6 +223,38 @@ class SingleRLAgent():
         rewritten_dict.update(str_to_str)
         return rewritten_dict
 
+
+
+
+
+
+
+
+class ObsExternalWorld():
+    def __init__(self, obstype):
+        if(obstype=='spatial'):
+            self.reset = self.obs_reset_function_spatial
+        if(obstype=='temporal'):
+            self.reset = self.obs_reset_function_empty
+
+    def obs_reset_function_spatial(self, agent):
+        # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
+        agent.obs = np.zeros(agent.obs_shape)
+        agent.obs.ravel()[np.random.choice(agent.obs.size, agent.n_objects, replace=False)] = 1
+
+    def obs_reset_function_empty(self, agent):
+        # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
+        agent.obs = np.zeros(agent.obs_shape)
+        agent.default_obs = agent.obs
+        agent.event_timesteps = calc_event_timesteps(agent.n_objects, max_episode_length=agent.max_episode_length)  #
+        agent.event_obs = np.zeros(agent.obs_shape)
+        middle_x = agent.obs_shape[0] // 2
+        middle_y = agent.obs_shape[1] // 2
+        for x in range(middle_x - 1, middle_x + 1):
+            for y in range(middle_y - 1, middle_y + 1):
+                agent.event_obs[x, y] = 1
+
+
 class FingerLayer():
     """
     This class implements the finger movement part of the environment.
@@ -253,6 +299,10 @@ class FingerLayer():
         self.fingerlayer = np.zeros(self.ext_shape)
         self.fingerlayer[self.pos_x, self.pos_y] = 1
 
+    def reset(self):
+        self.fingerlayer = np.zeros(self.ext_shape)
+        self.fingerlayer[0, 0] = 1
+
 
 def choose_external_representation(external_representation_tool, dim):
     if(external_representation_tool == 'MoveAndWrite'):
@@ -266,7 +316,18 @@ def choose_external_representation(external_representation_tool, dim):
     else:
         print("No valid 'external repr. tool was given! ")
 
-class MoveAndWrite():
+# Parent Class ExternalTool. Not usefully used so far. See empty fct-declarations
+class ExternalTool():
+    def __init__(self):
+        pass
+    def init_externalrepresentation(self):
+        pass
+    def step(self):
+        pass
+    def reset(self):
+        pass
+
+class MoveAndWrite(ExternalTool):
     """
     This class implements the external representation in the environment.
     """
@@ -294,9 +355,12 @@ class MoveAndWrite():
             pos_y = agent.fingerlayer.pos_y
             self.externalrepresentation[pos_x, pos_y] = -self.externalrepresentation[pos_x, pos_y] + 1
 
+    def reset(self):
+        self.externalrepresentation = np.zeros(agent.ext_shape)
 
 
-class WriteCoord():
+
+class WriteCoord(ExternalTool):
     """
     This class implements the external representation in the environment.
     Right now this external tool is only possible for 1D.
@@ -320,9 +384,10 @@ class WriteCoord():
         coord_int = int(action[-1])
         self.externalrepresentation[coord_int, 0] = -self.externalrepresentation[coord_int, 0] + 1
 
+    def reset(self):
+        self.externalrepresentation = np.zeros(self.ext_shape)
 
-
-class Abacus():
+class Abacus(ExternalTool):
     """
     This class implements the external representation in the environment.
     """
@@ -366,7 +431,11 @@ class Abacus():
             self.externalrepresentation[col, current_row] = 0
         self.externalrepresentation[self.token_pos[current_row], current_row] = 1
 
-
+    def reset(self, ext_shape):
+        self.token_pos = np.zeros(ext_shape, dtype=int)  # gives column-number of each token in each row. start out all in the left
+        self.externalrepresentation = np.zeros(ext_shape)
+        for rowy in range(self.ext_shape[1]):
+            self.externalrepresentation[self.token_pos[rowy], rowy] = 1
 
 class OtherInteractions():
     """
