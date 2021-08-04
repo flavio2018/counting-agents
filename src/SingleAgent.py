@@ -90,6 +90,8 @@ class SingleRLAgent():
         else:
                 reward, self.done = 0, False
 
+        self.solved = self.done
+
         self.env_update_function()
 
         if(self.timestep > self.max_episode_length):
@@ -97,7 +99,8 @@ class SingleRLAgent():
 
         if(self.done):
             self.states = None
-        info = None
+
+        info = {'IsSolved': self.solved}
 
         return self.state, reward, self.done, info
 
@@ -110,10 +113,10 @@ class SingleRLAgent():
 
     def env_update_function(self):
         if(self.params['observation'] == 'temporal'):
-            if (agent.timestep in agent.event_timesteps):
-                agent.obs = agent.event_obs
+            if (self.timestep in self.event_timesteps):
+                self.obs = self.event_obs
             else:
-                agent.obs = agent.default_obs
+                self.obs = self.default_obs
 
     def render(self, display_id=None):
         img_width = 50
@@ -431,9 +434,9 @@ class Abacus(ExternalTool):
             self.externalrepresentation[col, current_row] = 0
         self.externalrepresentation[self.token_pos[current_row], current_row] = 1
 
-    def reset(self, ext_shape):
-        self.token_pos = np.zeros(ext_shape, dtype=int)  # gives column-number of each token in each row. start out all in the left
-        self.externalrepresentation = np.zeros(ext_shape)
+    def reset(self):
+        self.token_pos = np.zeros(self.ext_shape, dtype=int)  # gives column-number of each token in each row. start out all in the left
+        self.externalrepresentation = np.zeros(self.ext_shape)
         for rowy in range(self.ext_shape[1]):
             self.externalrepresentation[self.token_pos[rowy], rowy] = 1
 

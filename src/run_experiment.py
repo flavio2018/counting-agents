@@ -21,14 +21,14 @@ def main():
     parser.add_argument('--num_iterations', type=int, default=10000)
     # If curriculum_learning is True, max_object will increment by 1 from initial max_objects, whenever the agent reaches a mean
     # reward of 0.98. Incrementation will stop at max_max_objects.
-    parser.add_argument('--curriculum_learning', type=bool, default=False)
+    parser.add_argument('--curriculum_learning', type=bool, default=True)
     parser.add_argument('--max_max_objects', type=int, default=9)
 
     parser.add_argument('--debug_mode', type=bool, default=True)
     parser.add_argument('--exp_name', type=str, default='TODO')
 
-    parser.add_argument('--BATCH_SIZE', type=int, default=16)
-    parser.add_argument('--PrioratizedReplayMemory', type=bool, default=True)
+    parser.add_argument('--BATCH_SIZE', type=int, default=64)
+    parser.add_argument('--PrioratizedReplayMemory', type=bool, default=False)
     parser.add_argument('--collect_every_n_iterations', type=int, default=1)
     parser.add_argument('--eval_every_n_iterations', type=int, default=100)
     parser.add_argument('--collect_n_episodes_per_itr', type=int, default=10)
@@ -74,16 +74,16 @@ def main():
     #    'main_reward': +1.0
     #}
 
-    obs_ext_shape = (3,3)
+    obs_ext_shape = (3,1)
 
     agent_params = {
         'max_objects': params['max_objects'],
         'obs_shape': obs_ext_shape,
         'ext_shape': obs_ext_shape,
         'BATCH_SIZE': params['BATCH_SIZE'],
-        'LEARNING_RATE': 6e-4,
+        'LEARNING_RATE': 1e-3,
         'target_update_freq': 10,
-        'MEMORY_CAPACITY': 200,
+        'MEMORY_CAPACITY': 400,
         'GAMMA': 0.95,
         'pretrained_model_path': None,
         # '/home/silvester/programming/rl-single-agent-numbers/counting-agents/src/../data/TODO_13-05-2021_13-10-36/model.pt', #'/home/silvester/programming/rl-single-agent-numbers/counting-agents/src/../data/TODO_12-05-2021_10-17-59/model.pt', # or None
@@ -94,7 +94,7 @@ def main():
     epsilon_greedy_args = {
         'EPS_START': 0.9,
         'EPS_END': 0.1,
-        'EPS_END_EPISODE': 0.05,  # 0.0: reaches eps_end at 0th episode. 1.0 reaches eps_end at the end of all episodes
+        'EPS_END_EPISODE': 0.2,  # 0.0: reaches eps_end at 0th episode. 1.0 reaches eps_end at the end of all episodes
     }
 
 

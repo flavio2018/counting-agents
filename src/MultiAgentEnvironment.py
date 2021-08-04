@@ -54,12 +54,14 @@ class MultiAgentEnvironment():
         else:
             reward, self.done = 0, False
 
+        self.solved = self.done
+
 
         if(self.timestep==self.max_episode_length):
             self.agents[0].fingerlayer.fingerlayer = 0.5 * np.ones(self.agents[0].ext_shape)
             self.agents[1].fingerlayer.fingerlayer = 0.5 * np.ones(self.agents[0].ext_shape)
 
-        if (self.timestep == self.max_episode_length):
+        if (self.timestep >= self.max_episode_length):
             self.agents[0].ext_repr_other = self.agents[1].ext_repr.externalrepresentation
             self.agents[1].ext_repr_other = self.agents[0].ext_repr.externalrepresentation
         else:
@@ -76,7 +78,8 @@ class MultiAgentEnvironment():
         self.states = [agent.state for agent in self.agents]
         if(self.done):
             self.states = None
-        info = None
+
+        info = {'IsSolved': self.solved}
 
         return self.states, reward, self.done, info
 
@@ -99,6 +102,8 @@ class MultiAgentEnvironment():
 
         self.agent_0_gave_answer_already = False
         self.agent_1_gave_answer_already = False
+
+        self.solved = False
 
         return self.states
 

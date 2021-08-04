@@ -58,11 +58,12 @@ class RL_Trainer(object):
 
         while(itr < num_iterations):
             if(itr % self.params['collect_every_n_iterations'] == 0):
-                _ = self.run_episodes_with_agent(train_episode=itr, writer=None, collect=True, eval=False, n_episodes=self.params['collect_n_episodes_per_itr'])
+                _, _ = self.run_episodes_with_agent(train_episode=itr, writer=None, collect=True, eval=False, n_episodes=self.params['collect_n_episodes_per_itr'])
             if(itr % self.params['eval_every_n_iterations'] == 0):
                  print("Evaluating on training set up to ", self.agent.env.max_objects , " ... ")
-                 mean_reward_train = self.run_episodes_with_agent(train_episode=itr, writer=writer, collect=False, eval=True, n_episodes=self.params['eval_n_episodes_per_itr'])
-                 print('MEAN {dataset} SCORE: {mean_reward}'.format(dataset='train', mean_reward=mean_reward_train))
+                 mean_reward_train, mean_solved_train = self.run_episodes_with_agent(train_episode=itr, writer=writer, collect=False, eval=True, n_episodes=self.params['eval_n_episodes_per_itr'])
+                 print('MEAN {dataset} REWARD: {mean_reward}'.format(dataset='train', mean_reward=mean_reward_train))
+                 print('MEAN {dataset} SCORE: {mean_solved}'.format(dataset='train', mean_solved=mean_solved_train))
                  print("Epsilon: ", self.agent.eps)
                  if(mean_reward_train > best_mean_reward):
                      model_path = self.params['logdir'] + '/best_model.pt'
@@ -71,7 +72,7 @@ class RL_Trainer(object):
 
             #for i in range(5):
             #    loss_i = self.agent.optimize_model()
-            #    print(loss_i)
+            #    #print(loss_i)
             loss = self.agent.optimize_model()
 
             if(loss is not None):
@@ -84,12 +85,12 @@ class RL_Trainer(object):
                 summed_loss = 0
 
             if (itr % self.params['eval_every_n_iterations'] == 0):
-                if(mean_reward_train>0.98 and self.params['curriculum_learning'] and self.agent.env.max_objects < self.params['max_max_objects']):
+                if(mean_solved_train>0.98 and self.params['curriculum_learning'] and self.agent.env.max_objects < self.params['max_max_objects']):
                     print("=========================== \n ===========================")
                     print("TRAIN FROM 1 TO ", self.agent.env.max_objects + 1)
                     print("=========================== \n ===========================")
                     # Run evaluation runs with master=True to save learned representation when task is mastered:
-                    mean_reward_train = self.run_episodes_with_agent(train_episode=itr, writer=writer, collect=False,
+                    mean_reward_train, mean_solved_train = self.run_episodes_with_agent(train_episode=itr, writer=writer, collect=False,
                                                                      eval=True,
                                                                      n_episodes=self.params['eval_n_episodes_per_itr'],
                                                                      master=True)
@@ -100,8 +101,9 @@ class RL_Trainer(object):
 
             itr += 1
 
-        final_reward = self.run_episodes_with_agent(writer=writer, collect=False, eval=True, n_episodes=self.params['eval_n_episodes_per_itr'], final=True)
-        print('Average Score: {:.2f}'.format(final_reward))
+        final_reward, final_score = self.run_episodes_with_agent(writer=writer, collect=False, eval=True, n_episodes=self.params['eval_n_episodes_per_itr'], final=True)
+        print('Average Final Reward: {:.2f}'.format(final_reward))
+        print('Average Final Score: {:.2f}'.format(final_score))
         # Save model
         model_path = self.params['logdir'] + '/model.pt'
         torch.save(self.agent.policy_net.state_dict(), model_path)
@@ -114,7 +116,9 @@ class RL_Trainer(object):
 
     def run_episodes_with_agent(self, writer=None, train_episode=0, collect=False, eval=True, n_episodes=50, final=False, master=False):
         total_rewards = []
+        total_solved = []
         summed_rewards = 0
+        summed_totals = 0
         env = self.agent.env
         ext_repr_imgs = {i: [] for i in range(1, self.agent.env.max_objects+1)}
 
@@ -129,7 +133,7 @@ class RL_Trainer(object):
                 t_sofar += 1
                 action = self.agent.select_action(state, train_episode, deterministic=eval)
                 actions_during_episode.append(action)
-                next_state, reward, done, _ = env.step(action)
+                next_state, reward, done, info = env.step(action)
                 episode_rewards.append(reward)
 
                 # Store the transition in memory
@@ -143,13 +147,16 @@ class RL_Trainer(object):
                     reward = sum(episode_rewards)
                     summed_rewards += reward
                     total_rewards.append(reward)
+                    total_solved.append(info['IsSolved'])
+                    summed_totals += info['IsSolved']
 
                 write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, action)
             ext_repr_imgs = write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, ext_repr_imgs, master)
         mean_reward = summed_rewards/n_episodes
-        write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, master, mean_reward)
+        mean_solved = summed_totals/n_episodes
+        write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, master, mean_reward, mean_solved)
 
-        return mean_reward
+        return mean_reward, mean_solved
 
 
 
@@ -190,7 +197,7 @@ def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofa
 
             return ext_repr_imgs
 
-def write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, master, mean_reward):
+def write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, master, mean_reward, mean_solved):
     if (train_episode % 1000 == 0 or master):
         if (eval and writer is not None):
             total_imgs = [np.expand_dims(ext_repr_imgs[i][0], axis=0) for i in range(1, env.max_objects + 1)]
@@ -202,6 +209,8 @@ def write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar,
     if (eval and writer is not None):
         writingOn = 'metrics/mean_rewards'
         writer.add_scalar(writingOn, mean_reward, train_episode)
+        writingOn = 'metrics/mean_solved'
+        writer.add_scalar(writingOn, mean_solved, train_episode)
 
 def demonstrate_model(model, env, collect=False, eval=True, n_objects=None):
     total_rewards = []
