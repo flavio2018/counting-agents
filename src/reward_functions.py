@@ -5,28 +5,45 @@ import random
 
 def reward_done_function_classify(reward_dict, agents):
     reward = 0.0
-    if (agents.timestep <= agents.max_episode_length):
-        if(agents.params['observation']=='temporal'):
-            reward += reward_interaction_during_events(reward_dict, agents)
-        if (agents.params['observation'] == 'spatial'):
-            for agent in agents.agents:
-                if (agent.all_actions_dict[np.where(agent.action == 1)[0][0]] in agent.ext_repr.actions or Is_agent_moved(agent)):
-                    reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
-                if (Is_agent_said_number(agent)):
-                    reward += reward_dict['said_number_before_last_time_step'] / (agent.max_episode_length )
-    else:
-        first_said_correct = False
-        second_said_correct = False
-        agent_0, agent_1 = agents.agents[0], agents.agents[1]
-        if Is_agent_did_action(agent_0, str(agent_1.n_objects)):
-            first_said_correct = True
-            reward += reward_dict['main_reward']/2.0
-        if Is_agent_did_action(agent_1, str(agent_0.n_objects)):
-            reward += reward_dict['main_reward']/2.0
-            second_said_correct = True
-        if(first_said_correct and second_said_correct):
-            #reward += reward_dict['main_reward']
-            agents.done = True
+
+    if (agents.single_or_double == 'single'):
+        if (agents.timestep <= agents.max_episode_length):
+            if (agents.params['observation'] == 'temporal'):
+                reward += reward_interaction_during_events(reward_dict, agents)
+            if (agents.params['observation'] == 'spatial'):
+                if (agents.all_actions_dict[np.where(agents.action == 1)[0][0]] in agents.ext_repr.actions or Is_agent_moved(agents)):
+                    reward += reward_dict['moved_or_mod_ext'] / (agents.max_episode_length )
+                if (Is_agent_said_number(agents)):
+                    reward += reward_dict['said_number_before_last_time_step'] / (agents.max_episode_length )
+        else:
+            if Is_agent_did_action(agents, str(agents.n_objects)):
+                reward += reward_dict['main_reward']
+                agents.done = True
+
+    if(agents.single_or_double == 'double'):
+        if (agents.timestep <= agents.max_episode_length):
+            if(agents.params['observation']=='temporal'):
+                for agent in agents.agents:
+                    reward += reward_interaction_during_events(reward_dict, agent)
+            if (agents.params['observation'] == 'spatial'):
+                for agent in agents.agents:
+                    if (agent.all_actions_dict[np.where(agent.action == 1)[0][0]] in agent.ext_repr.actions or Is_agent_moved(agent)):
+                        reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+                    if (Is_agent_said_number(agent)):
+                        reward += reward_dict['said_number_before_last_time_step'] / (agent.max_episode_length )
+        else:
+            first_said_correct = False
+            second_said_correct = False
+            agent_0, agent_1 = agents.agents[0], agents.agents[1]
+            if Is_agent_did_action(agent_0, str(agent_1.n_objects)):
+                first_said_correct = True
+                reward += reward_dict['main_reward']/2.0
+            if Is_agent_did_action(agent_1, str(agent_0.n_objects)):
+                reward += reward_dict['main_reward']/2.0
+                second_said_correct = True
+            if(first_said_correct and second_said_correct):
+                #reward += reward_dict['main_reward']
+                agents.done = True
     return reward, agents.done
 
 
@@ -80,23 +97,21 @@ def reward_done_function_reproduce(reward_dict, agent):
 
 
 
-def reward_interaction_during_events(reward_dict, agents):
+def reward_interaction_during_events(reward_dict, agent):
 
         reward = 0.0
-        for agent in agents.agents:
-            if(agents.params['observation']=='temporal'):
-                if (agent.all_actions_dict[np.where(agent.action==1)[0][0]] in agent.ext_repr.actions):
-                    if((agent.timestep-1) in agent.event_timesteps):
-                        reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
-                    else:
-                        reward -= reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
-                if ((agent.timestep-1) not in agent.event_timesteps):
-                    if(Is_agent_moved(agent)):
-                        reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length)
-                    else:
-                        reward -= reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
-                if (Is_agent_said_number(agent)):
-                    reward += reward_dict['said_number_before_last_time_step'] / (agent.max_episode_length )
+        if (agent.all_actions_dict[np.where(agent.action==1)[0][0]] in agent.ext_repr.actions):
+            if((agent.timestep-1) in agent.event_timesteps):
+                reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+            else:
+                reward -= reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+        if ((agent.timestep-1) not in agent.event_timesteps):
+            if(Is_agent_moved(agent)):
+                reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length)
+            else:
+                reward -= reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
+        if (Is_agent_said_number(agent)):
+            reward += reward_dict['said_number_before_last_time_step'] / (agent.max_episode_length )
 
         return reward
 
@@ -154,7 +169,7 @@ def Is_agent_said_number(agent):
             agent.said_number = True
     return agent.said_number
 
-
+'''
 def calc_event_timesteps(n_objects, max_episode_length=None):
     if(n_objects<=3):
         return random.sample(range(1, max_episode_length), n_objects)
@@ -171,7 +186,7 @@ def calc_event_timesteps(n_objects, max_episode_length=None):
         t_n += random.randint(timestep_range[0], timestep_range[1])
         event_timesteps.append(t_n)
     return event_timesteps
-
+'''
 
 
 

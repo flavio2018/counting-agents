@@ -15,6 +15,7 @@ from DQN_Agent_Double import DQN_Agent_Double
 from ReplayMemory import ReplayMemory
 from PIL import Image, ImageDraw
 import utils
+import pickle
 
 
 class RL_Trainer(object):
@@ -50,6 +51,11 @@ class RL_Trainer(object):
         writer.add_text(writingOn, writer_text, 0)
         writer_text = str(self.agent.env.reward_dict).replace(',', '<br/>')
         writer.add_text(writingOn, writer_text, 0)
+        model_path = self.params['logdir'] + '/model.pt'
+        writer.add_text(writingOn, model_path, 0)
+        dict_path = self.params['logdir'] + '/params.pickle'
+        with open(dict_path, "wb") as f:
+            pickle.dump(self.params, f)
         summed_loss = 0
         start_time = timeit.default_timer()
         log_loss_frequ = self.params['log_loss_frequ']
@@ -66,8 +72,8 @@ class RL_Trainer(object):
                  print('MEAN {dataset} SCORE: {mean_solved}'.format(dataset='train', mean_solved=mean_solved_train))
                  print("Epsilon: ", self.agent.eps)
                  if(mean_reward_train > best_mean_reward):
-                     model_path = self.params['logdir'] + '/best_model.pt'
-                     torch.save(self.agent.policy_net.state_dict(), model_path)
+                     best_model_path = self.params['logdir'] + '/best_model.pt'
+                     torch.save(self.agent.policy_net.state_dict(), best_model_path)
                      best_mean_reward = mean_reward_train
 
             #for i in range(5):
@@ -105,7 +111,6 @@ class RL_Trainer(object):
         print('Average Final Reward: {:.2f}'.format(final_reward))
         print('Average Final Score: {:.2f}'.format(final_score))
         # Save model
-        model_path = self.params['logdir'] + '/model.pt'
         torch.save(self.agent.policy_net.state_dict(), model_path)
         print("Model saved in: ", model_path)
 
@@ -124,7 +129,7 @@ class RL_Trainer(object):
 
         for i_episode in range(n_episodes):
             state = env.reset()
-            t_sofar = 0
+            t_sofar = -1
             done = False
             episode_rewards = []
             actions_during_episode = []
@@ -132,7 +137,14 @@ class RL_Trainer(object):
             while not done:
                 t_sofar += 1
                 action = self.agent.select_action(state, train_episode, deterministic=eval)
-                actions_during_episode.append(action)
+                if (env.params['single_or_multi_agent'] == 'multi'):
+                    actions_during_episode.append(action)
+
+                #env.action = np.zeros(env.action_dim)
+                #env.action[env.all_actions_dict_inv[action]] = 1
+                write_each_time_step(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode,
+                                     action)
+
                 next_state, reward, done, info = env.step(action)
                 episode_rewards.append(reward)
 
@@ -150,7 +162,7 @@ class RL_Trainer(object):
                     total_solved.append(info['IsSolved'])
                     summed_totals += info['IsSolved']
 
-                write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, action)
+                #write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, action)
             ext_repr_imgs = write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, ext_repr_imgs, master)
         mean_reward = summed_rewards/n_episodes
         mean_solved = summed_totals/n_episodes
@@ -168,10 +180,16 @@ def write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, ac
 
     if (eval and i_episode == 0):  #
         if (env.params['single_or_multi_agent'] == 'single'):
+            if (t_sofar == 0):
+                print("num: ", env.n_objects)
+                binary_event_timesteps = [0]*env.max_episode_length
+                for e_i in env.event_timesteps:
+                    binary_event_timesteps[e_i] = 1
+                print("event_timesteps: ", binary_event_timesteps)
             actions_during_episode.append(env.all_actions_dict[action])
         if (env.params['single_or_multi_agent'] == 'multi'):
-            if (t_sofar == 1):
-                print("num ", t_sofar, ": ", [env.agents[0].n_objects, env.agents[1].n_objects])
+            if (t_sofar == 0):
+                print("num: ", [env.agents[0].n_objects, env.agents[1].n_objects])
             print("act ", t_sofar, ": ", [env.agents[0].all_actions_dict[action_i] for action_i in action])
 
 def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, ext_repr_imgs, master):
@@ -185,13 +203,21 @@ def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofa
                 agenty = env
             else:
                 agenty = env.agents[0]
-            ext_repr_img = Image.fromarray(agenty.ext_repr.externalrepresentation * 255).resize((img_height, img_height), resample=0)
+
+            ext_img_shape = (img_height * agenty.ext_shape[1], img_height * agenty.ext_shape[0])
+            ext_repr_img = Image.fromarray(agenty.ext_repr.externalrepresentation * 255).resize(ext_img_shape, resample=0)
             ext_repr_img = utils.add_grid_lines(ext_repr_img, agenty.ext_repr.externalrepresentation)
             ext_repr_img = ext_repr_img.transpose(Image.TRANSPOSE)
-            space_img = Image.fromarray(np.ones(agenty.ext_shape[1], dtype=np.uint8)*255).resize((img_height//4, img_height), resample=0)
-            ext_repr_img = utils.concat_imgs_h([ext_repr_img, space_img], dist=0)
             annotaty = str(agenty.n_objects)
             ext_repr_img = utils.annotate_below(ext_repr_img, annotaty).convert('RGB')
+            dimmy = 1 if agenty.ext_shape[1] == 1 else 2
+            if (dimmy==1):
+                space_img = Image.fromarray(np.ones(agenty.ext_shape[1], dtype=np.uint8)*255).resize((img_height, img_height//4), resample=0)
+                ext_repr_img = utils.concat_imgs_h([ext_repr_img, space_img], dist=0)
+            else:
+                space_img = Image.fromarray(np.ones(agenty.ext_shape[1], dtype=np.uint8)*255).resize((img_height//4, img_height), resample=0)
+                ext_repr_img = utils.concat_imgs_h([ext_repr_img, space_img], dist=0)
+
             ext_repr_img = np.asarray( ext_repr_img ).astype(np.uint8).transpose([2,0,1])
             ext_repr_imgs[agenty.n_objects].append(ext_repr_img)
 

@@ -128,15 +128,15 @@ class DQN_Agent_Double(object):
         #next_state_values = q_sp1_tensor_max_mean                     ### !!!! without done-masking!!!!
         expected_state_action_values = (next_state_values * self.params['GAMMA']) + reward_batch.squeeze(1)
 
-        #loss = F.mse_loss(state_values, expected_state_action_values)
-        batch_weights = torch.from_numpy(weights)
-        loss_i = batch_weights * (state_values - expected_state_action_values) ** 2
-        if self.params['PrioratizedReplayMemory']:
-            batch_indices = torch.from_numpy(indices)
-            prios = loss_i + 1e-5
-            self.memory.update_priorities(batch_indices, prios.data.cpu().numpy())
+        loss = F.mse_loss(state_values, expected_state_action_values)
+        #batch_weights = torch.from_numpy(weights)
+        #loss_i = batch_weights * (state_values.squeeze(1) - expected_state_action_values) ** 2
+        #if self.params['PrioratizedReplayMemory']:
+        #    batch_indices = torch.from_numpy(indices)
+        #    prios = loss_i + 1e-5
+        #    self.memory.update_priorities(batch_indices, prios.data.cpu().numpy())
         # Optimize the model
-        loss = torch.sum(loss_i)
+        #loss = torch.sum(loss_i)
         self.optimizer.zero_grad()
         loss.backward()
         #for param in self.policy_net.parameters():

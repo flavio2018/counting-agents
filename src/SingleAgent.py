@@ -20,6 +20,7 @@ class SingleRLAgent():
     This class implements the environment as a whole.
     """
     def __init__(self, agent_params, n_objects=None):
+        self.single_or_double = 'single'
         self.params = agent_params
         self.max_objects = n_objects if n_objects is not None else self.params['max_objects']
         self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation']) if 'max_episode_length' not in self.params else self.params['max_episode_length']
@@ -83,7 +84,7 @@ class SingleRLAgent():
         # manually by str/int.
         self.action = np.zeros(self.action_dim)
         self.action[self.all_actions_dict_inv[action]] = 1
-        self.state = self.update_state()
+
 
         if(not self.IsPartOfMultiAgents and self.check_reward):
                 reward, self.done = self.reward_done_function(self.reward_dict, self)
@@ -93,6 +94,7 @@ class SingleRLAgent():
         self.solved = self.done
 
         self.env_update_function()
+        self.state = self.update_state()
 
         if(self.timestep > self.max_episode_length):
             self.done = True
@@ -118,11 +120,16 @@ class SingleRLAgent():
             else:
                 self.obs = self.default_obs
 
+        if(self.IsPartOfMultiAgents== False):
+            if(self.timestep>=self.max_episode_length):
+                self.fingerlayer.fingerlayer = 0.5 * np.ones(self.ext_shape)
+                self.obs = 0.5 * np.ones(self.ext_shape)
+
     def render(self, display_id=None):
         img_width = 50
         img_height = 50
         obs_img_shape = (img_width * self.obs_shape[1], img_height * self.obs_shape[0])
-        ext_img_shape = (img_width * self.ext_shape[1], img_height * self.obs_shape[0])
+        ext_img_shape = (img_width * self.ext_shape[1], img_height * self.ext_shape[0])
 
 
         self.obs_img = Image.fromarray(self.obs*255).resize( obs_img_shape, resample=0)
@@ -140,7 +147,7 @@ class SingleRLAgent():
         self.ext_repr_img = self.ext_repr_img.transpose(Image.TRANSPOSE)
         self.ext_repr_img = utils.annotate_below(self.ext_repr_img, "External representation")
 
-        if hasattr(self, 'ext_repr_other'):
+        if self.IsPartOfMultiAgents:
             self.ext_repr_other_img = Image.fromarray(self.ext_repr_other*255).resize( ext_img_shape, resample=0)
             self.ext_repr_other_img = utils.add_grid_lines(self.ext_repr_other_img, self.ext_repr_other)
             self.ext_repr_other_img = self.ext_repr_other_img.transpose(Image.TRANSPOSE)
@@ -150,7 +157,7 @@ class SingleRLAgent():
         self.finger_img = utils.add_grid_lines(self.finger_img, self.fingerlayer.fingerlayer)
         self.finger_img = self.finger_img.transpose(Image.TRANSPOSE)
         self.finger_img = utils.annotate_below(self.finger_img, "Finger layer")
-        if hasattr(self, 'ext_repr_other'):
+        if self.IsPartOfMultiAgents:
             total_img = utils.concat_imgs_h([self.obs_img, self.finger_img, self.ext_repr_img, self.ext_repr_other_img, self.action_img], dist=10).convert('RGB')
         else:
             total_img = utils.concat_imgs_h([self.obs_img, self.finger_img, self.ext_repr_img, self.action_img], dist=10).convert('RGB')
@@ -303,8 +310,10 @@ class FingerLayer():
         self.fingerlayer[self.pos_x, self.pos_y] = 1
 
     def reset(self):
+        self.pos_x = 0 #random.randint(0, dim-1)
+        self.pos_y = 0 #random.randint(0, dim-1)
         self.fingerlayer = np.zeros(self.ext_shape)
-        self.fingerlayer[0, 0] = 1
+        self.fingerlayer[self.pos_x, self.pos_y] = 1
 
 
 def choose_external_representation(external_representation_tool, dim):
@@ -359,7 +368,7 @@ class MoveAndWrite(ExternalTool):
             self.externalrepresentation[pos_x, pos_y] = -self.externalrepresentation[pos_x, pos_y] + 1
 
     def reset(self):
-        self.externalrepresentation = np.zeros(agent.ext_shape)
+        self.externalrepresentation = np.zeros(self.ext_shape)
 
 
 
@@ -471,7 +480,7 @@ class OtherInteractions():
 
 def calc_max_episode_length(n_objects, observation):
     if (observation == 'spatial'):
-        return 2 * (n_objects-1)
+        return (n_objects-1)
     elif (observation == 'temporal'):
         if(n_objects<=3):
             return 1*n_objects+1
@@ -482,3 +491,19 @@ def calc_max_episode_length(n_objects, observation):
         return max_time_length
 
 
+def calc_event_timesteps(n_objects, max_episode_length=None):
+    if(n_objects<=3):
+        return random.sample(range(1, max_episode_length), n_objects)
+    big_timestep_range_from_n = 5
+    small_timestep_range = [1, 2]
+    big_timestep_range = [2, 3]
+    timestep_range = small_timestep_range
+    event_timesteps = []
+    t_n = 0
+
+    for n in range(1, n_objects + 1):
+        if (n == big_timestep_range_from_n):
+            timestep_range = big_timestep_range
+        t_n += random.randint(timestep_range[0], timestep_range[1])
+        event_timesteps.append(t_n)
+    return event_timesteps

@@ -27,32 +27,37 @@ class CNN(nn.Module):
         if(dim == 2):
             kernel_size = (3,3)
             self.conv1 = nn.Conv2d(in_channels=in_channels, out_channels=2, kernel_size=kernel_size, stride=1, padding=1)
-            self.conv2 = nn.Conv2d(in_channels=2, out_channels=4, kernel_size=kernel_size, stride=1)
+            #self.conv2 = nn.Conv2d(in_channels=2, out_channels=4, kernel_size=kernel_size, stride=1)
         else:
             kernel_size = 3
             self.conv1 = nn.Conv1d(in_channels=in_channels, out_channels=2, kernel_size=kernel_size, stride=1, padding=1)
-            self.conv2 = nn.Conv1d(in_channels=2, out_channels=4, kernel_size=kernel_size, stride=1)
+            #self.conv2 = nn.Conv1d(in_channels=2, out_channels=4, kernel_size=kernel_size, stride=1)
 
         #self.conv3 = nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, stride=1)
 
         if(example_input is not None):
-            x = self.conv1(torch.from_numpy(example_input).unsqueeze(0).float())
-            x = self.conv2(x)
+            inpy = torch.from_numpy(example_input).float().unsqueeze(0)
+            if(dim==1):
+                inpy = inpy.squeeze(-1)
+            x = self.conv1(inpy)
+            #x = self.conv2(x)
             input_dim = x.size().numel()
         else:
             input_dim = in_channels * 4 * 4
         #input_dim = conv_output_shape((3,3), kernel_size=1, stride=1, pad=0, dilation=1)
         self.fc1 = nn.Linear(in_features=input_dim, out_features=512)  #512
         self.fc2 = nn.Linear(in_features=512, out_features=num_actions)
-
-
         self.fc3 = nn.Linear(in_features=input_dim, out_features=num_actions)
 
         self.relu = nn.ReLU()
 
+        self.dim = dim
+
     def forward(self, x):
+        if(self.dim == 1):
+            x = x.squeeze(3)
         x = self.relu(self.conv1(x))
-        x = self.relu(self.conv2(x))
+        #x = self.relu(self.conv2(x))
         x = x.view(x.size(0), -1)
         x = self.relu(self.fc1(x))
         x = self.fc2(x)
@@ -65,6 +70,7 @@ class CNN(nn.Module):
 class N_Concat_CNNs(nn.Module):
     def __init__(self, in_channels, num_actions, shared_policy=False, example_input=None, dim=2):
         super(N_Concat_CNNs, self).__init__()
+        #def __init__(self):
         example_input_ = example_input[0] if dim==2 else example_input[0].squeeze(2)
         self.CNN_1 = CNN(in_channels, num_actions, example_input=example_input_, dim=dim)
         #self.CNN_2 = CNN(in_channels, num_actions)
@@ -79,9 +85,6 @@ class N_Concat_CNNs(nn.Module):
         #out2 = self.CNN_1(x_list[:, 1, :, :, :])
         input1 = x_list[:, 0, :, :, :]
         input2 = x_list[:, 1, :, :, :]
-        if(self.dim==1):
-            input1 = input1.squeeze(3)
-            input2 = input2.squeeze(3)
         out1 = self.CNN_1(input1)
         out2 = self.CNN_1(input2)
         #if(self.shared_policy):

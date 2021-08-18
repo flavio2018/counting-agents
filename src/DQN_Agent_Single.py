@@ -125,22 +125,22 @@ class DQN_Agent_Single(object):
         # This is merged based on the mask, such that we'll have either the expected
         # state value or 0 in case the state was final.
         next_state_values = torch.zeros(BATCH_SIZE, device=self.device)
-        next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach()
+        next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1)[0].detach() #torch.clip( self.target_net(non_final_next_states).max(1)[0].detach(), -1, 1)
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * GAMMA) + reward_batch
 
         # Compute Huber loss
         #criterion = nn.SmoothL1Loss()
         #loss = criterion(state_action_values, expected_state_action_values.unsqueeze(1))
-        #loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
-        batch_weights = torch.from_numpy(weights)
-        loss_i = batch_weights * (state_values - expected_state_action_values) ** 2
-        if self.params['PrioratizedReplayMemory']:
-            batch_indices = torch.from_numpy(indices)
-            prios = loss_i + 1e-5
-            self.memory.update_priorities(batch_indices, prios.data.cpu().numpy())
+        loss = F.smooth_l1_loss(state_action_values, expected_state_action_values.unsqueeze(1))
+        # batch_weights = torch.from_numpy(weights)
+        # loss_i = batch_weights * (state_action_values.squeeze(1) - expected_state_action_values) ** 2
+        # if self.params['PrioratizedReplayMemory']:
+        #     batch_indices = torch.from_numpy(indices)
+        #     prios = loss_i + 1e-5
+        #     self.memory.update_priorities(batch_indices, prios.data.cpu().numpy())
         # Optimize the model
-        loss = torch.sum(loss_i)
+        #loss = torch.sum(loss_i)
         self.optimizer.zero_grad()
         loss.backward()
         #for param in self.policy_net.parameters():

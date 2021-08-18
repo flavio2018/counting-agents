@@ -1,5 +1,5 @@
 import utils
-from SingleAgent import SingleRLAgent
+from SingleAgent import SingleRLAgent, calc_max_episode_length
 import numpy as np
 from IPython.display import display, update_display
 import time
@@ -16,7 +16,7 @@ class MultiAgentEnvironment():
          env.state=[agent_1_state, agent_2_state],
     '''
     def __init__(self, params, max_objects=None):
-
+        self.single_or_double = 'double'
         self.params = params
         #self.experiment_specific_setup = AgentSetupDict[self.params['Agent_Setup']](self.params)
         self.max_objects = max_objects if max_objects is not None else self.params['max_objects']
@@ -57,7 +57,7 @@ class MultiAgentEnvironment():
         self.solved = self.done
 
 
-        if(self.timestep==self.max_episode_length):
+        if(self.timestep>=self.max_episode_length):
             self.agents[0].fingerlayer.fingerlayer = 0.5 * np.ones(self.agents[0].ext_shape)
             self.agents[1].fingerlayer.fingerlayer = 0.5 * np.ones(self.agents[0].ext_shape)
 
@@ -119,14 +119,14 @@ class MultiAgentEnvironment():
 
 
 
-def calc_max_episode_length(n_objects, observation):
-    if (observation == 'spatial'):
-        return 2 * (n_objects-1)
-    elif (observation == 'temporal'):
-        if(n_objects<=3):
-            return 1*n_objects+1
-        big_timestep_range_from_n = 5
-        max_time_length = min(big_timestep_range_from_n - 1, n_objects) * 2 # + max(0,max_objects-big_timestep_range_from_n)*3
-        if (n_objects >= big_timestep_range_from_n):
-            max_time_length += (n_objects - big_timestep_range_from_n + 1) * 3
-        return max_time_length
+# def calc_max_episode_length(n_objects, observation):
+#     if (observation == 'spatial'):
+#         return 2 * (n_objects-1)
+#     elif (observation == 'temporal'):
+#         if(n_objects<=3):
+#             return 1*n_objects+1
+#         big_timestep_range_from_n = 5
+#         max_time_length = min(big_timestep_range_from_n - 1, n_objects) * 2 # + max(0,max_objects-big_timestep_range_from_n)*3
+#         if (n_objects >= big_timestep_range_from_n):
+#             max_time_length += (n_objects - big_timestep_range_from_n + 1) * 3
+#         return max_time_length
