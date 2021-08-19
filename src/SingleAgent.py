@@ -163,6 +163,7 @@ class SingleRLAgent():
 
     def reset(self, n_objects=None):
         self.n_objects = random.randint(1, self.max_objects) if(n_objects is None) else n_objects
+        self.max_episode_length = calc_max_episode_length(self.n_objects, self.params['observation'])
 
         #self.experiment_specific_setup.reset(self)
         self.ext_repr.reset()
@@ -459,6 +460,7 @@ class OtherInteractions():
              }
         elif (task == 'classify'):
             self.actions = {i: str(i) for i in range(1, max_n+1)}
+            self.actions[max_n+1] = 'wait'
 
         elif (task == 'reproduce'):
             self.actions = {
@@ -478,20 +480,20 @@ def calc_max_episode_length(n_objects, observation):
         return (n_objects-1)
     elif (observation == 'temporal'):
         if(n_objects<=3):
-            return 1*n_objects+1
+            return 2*n_objects+1
         big_timestep_range_from_n = 5
         max_time_length = min(big_timestep_range_from_n - 1, n_objects) * 2 # + max(0,max_objects-big_timestep_range_from_n)*3
         if (n_objects >= big_timestep_range_from_n):
             max_time_length += (n_objects - big_timestep_range_from_n + 1) * 3
-        return max_time_length
+        return 2*n_objects+1
 
 
 def calc_event_timesteps(n_objects, max_episode_length=None):
-    if(n_objects<=3):
-        return random.sample(range(1, max_episode_length), n_objects)
+    #if(n_objects<=3):
+    #    return random.sample(range(1, max_episode_length), n_objects)
     big_timestep_range_from_n = 5
-    small_timestep_range = [1, 2]
-    big_timestep_range = [2, 3]
+    small_timestep_range = [2, 2]
+    big_timestep_range = [2, 2]
     timestep_range = small_timestep_range
     event_timesteps = []
     t_n = 0

@@ -106,6 +106,8 @@ def reward_interaction_during_events(reward_dict, agent):
             else:
                 reward -= reward_dict['moved_or_mod_ext'] / (agent.max_episode_length )
         if ((agent.timestep-1) not in agent.event_timesteps):
+            if(Is_agent_did_action(agent, 'wait')):
+                reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length)
             if(Is_agent_moved(agent)):
                 reward += reward_dict['moved_or_mod_ext'] / (agent.max_episode_length)
             else:
