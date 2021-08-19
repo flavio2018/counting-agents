@@ -1,11 +1,6 @@
 import utils
 from SingleAgent import SingleRLAgent, calc_max_episode_length
-import numpy as np
-from IPython.display import display, update_display
-import time
-import matplotlib.pyplot as plt
-import pytorch_utils as ptu
-#from ExperimentSetups import *
+from IPython.display import update_display
 from reward_functions import *
 
 class MultiAgentEnvironment():
@@ -18,10 +13,8 @@ class MultiAgentEnvironment():
     def __init__(self, params, max_objects=None):
         self.single_or_double = 'double'
         self.params = params
-        #self.experiment_specific_setup = AgentSetupDict[self.params['Agent_Setup']](self.params)
         self.max_objects = max_objects if max_objects is not None else self.params['max_objects']
         self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation']) if 'max_episode_length' not in self.params else self.params['max_episode_length']
-        #self.experiment_specific_setup = ExperimentSetup(params)
 
         print("Working with max ", self.max_objects, " objects")
         self.check_reward = True
@@ -32,12 +25,12 @@ class MultiAgentEnvironment():
 
         self.reward_dict = self.params['reward_dict'] if 'main_reward' in self.params else ZeroRewardDict
         self.reward_done_function = RewardFunctionDict[self.params['task']]
+        self.gray_image = 0.5 * np.ones(self.agents[0].ext_shape)
 
         self.reset()
 
     def step(self, actions):
         self.timestep += 1
-        reward = 0
         next_states_list = []
 
         # Perform actions for both actions and get next_states
@@ -53,27 +46,14 @@ class MultiAgentEnvironment():
             reward, self.done = self.reward_done_function(self.reward_dict, self)
         else:
             reward, self.done = 0, False
-
         self.solved = self.done
 
-
-        if(self.timestep>=self.max_episode_length):
-            self.agents[0].fingerlayer.fingerlayer = 0.5 * np.ones(self.agents[0].ext_shape)
-            self.agents[1].fingerlayer.fingerlayer = 0.5 * np.ones(self.agents[0].ext_shape)
-
-        if (self.timestep >= self.max_episode_length):
-            self.agents[0].ext_repr_other = self.agents[1].ext_repr.externalrepresentation
-            self.agents[1].ext_repr_other = self.agents[0].ext_repr.externalrepresentation
-        else:
-            self.agents[0].ext_repr_other = 0.5 * np.ones(self.agents[0].ext_shape)
-            self.agents[1].ext_repr_other = 0.5 * np.ones(self.agents[0].ext_shape)
-
+        self.env_update_function()
         self.agents[0].update_state()
         self.agents[1].update_state()
 
         if(self.timestep > self.max_episode_length):
             self.done = True
-
 
         self.states = [agent.state for agent in self.agents]
         if(self.done):
@@ -83,6 +63,17 @@ class MultiAgentEnvironment():
 
         return self.states, reward, self.done, info
 
+    def env_update_function(self):
+        if (self.timestep >= self.max_episode_length):
+            self.agents[0].fingerlayer.fingerlayer = self.gray_image
+            self.agents[1].fingerlayer.fingerlayer = self.gray_image
+            self.agents[0].ext_repr_other = self.agents[1].ext_repr.externalrepresentation
+            self.agents[1].ext_repr_other = self.agents[0].ext_repr.externalrepresentation
+            self.agents[0].ext_repr.externalrepresentation = self.gray_image
+            self.agents[1].ext_repr.externalrepresentation = self.gray_image
+        else:
+            self.agents[0].ext_repr_other = self.gray_image
+            self.agents[1].ext_repr_other = self.gray_image
 
     def reset(self, n_objects = None):
         n_range = np.arange(1, self.max_objects + 1)

@@ -169,24 +169,5 @@ def Is_agent_said_number(agent):
             agent.said_number = True
     return agent.said_number
 
-'''
-def calc_event_timesteps(n_objects, max_episode_length=None):
-    if(n_objects<=3):
-        return random.sample(range(1, max_episode_length), n_objects)
-    big_timestep_range_from_n = 5
-    small_timestep_range = [1, 2]
-    big_timestep_range = [2, 3]
-    timestep_range = small_timestep_range
-    event_timesteps = []
-    t_n = 0
-
-    for n in range(1, n_objects + 1):
-        if (n == big_timestep_range_from_n):
-            timestep_range = big_timestep_range
-        t_n += random.randint(timestep_range[0], timestep_range[1])
-        event_timesteps.append(t_n)
-    return event_timesteps
-'''
-
 
 

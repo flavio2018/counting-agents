@@ -18,7 +18,7 @@ def main():
 
     parser.add_argument('--max_objects', type=int, default=2)
     #parser.add_argument('--max_episode_length', type=int, default=5)
-    parser.add_argument('--num_iterations', type=int, default=100000)
+    parser.add_argument('--num_iterations', type=int, default=10000)
     # If curriculum_learning is True, max_object will increment by 1 from initial max_objects, whenever the agent reaches a mean
     # reward of 0.98. Incrementation will stop at max_max_objects.
     parser.add_argument('--curriculum_learning', type=bool, default=True)
@@ -27,7 +27,7 @@ def main():
     parser.add_argument('--debug_mode', type=bool, default=True)
     parser.add_argument('--exp_name', type=str, default='TODO')
 
-    parser.add_argument('--BATCH_SIZE', type=int, default=32)
+    parser.add_argument('--BATCH_SIZE', type=int, default=64)
     parser.add_argument('--PrioratizedReplayMemory', type=bool, default=False)
     parser.add_argument('--collect_every_n_iterations', type=int, default=1)
     parser.add_argument('--eval_every_n_iterations', type=int, default=100)
@@ -62,9 +62,9 @@ def main():
 
     # Spatial Classify MoveAndWrite
     reward_dict = {
-        'moved_or_mod_ext': +0.5,
-        'said_number_before_last_time_step': -0.0,
-        'main_reward': +1.0
+        'moved_or_mod_ext': +0.3,
+        'said_number_before_last_time_step': -0.3,
+        'main_reward': +0.7
     }
 
     # Temporal Compare Abacus
@@ -81,7 +81,7 @@ def main():
         'obs_shape': obs_ext_shape,
         'ext_shape': obs_ext_shape,
         'BATCH_SIZE': params['BATCH_SIZE'],
-        'LEARNING_RATE': 5e-4,
+        'LEARNING_RATE': 5e-3,
         'target_update_freq': 10,
         'MEMORY_CAPACITY': 200,
         'GAMMA': 0.95,
@@ -94,7 +94,7 @@ def main():
     epsilon_greedy_args = {
         'EPS_START': 0.9,
         'EPS_END': 0.2,
-        'EPS_END_EPISODE': 0.02,  # 0.0: reaches eps_end at 0th episode. 1.0 reaches eps_end at the end of all episodes
+        'EPS_END_EPISODE': 0.4,  # 0.0: reaches eps_end at 0th episode. 1.0 reaches eps_end at the end of all episodes
     }
 
 

@@ -1,19 +1,13 @@
 """
 This file contains the implementation of the environment from the point of view of a single agent. The environment class SingleRLAgent embeds three subclasses (FingerLayer, ExternalRepresentation, OtherInteractions) which implement the dynamics of the different environment parts.
 """
-import time
 from PIL import Image, ImageDraw
 from IPython.display import display, update_display
-import numpy as np
 import utils
-import random
 import pytorch_utils as ptu
-#from ExperimentSetups import *
+
 from reward_functions import *
 
-# TODO (?): later in utils
-from PIL import ImageFont
-#from fonts.ttf import AmaticSC
 
 class SingleRLAgent():
     """
@@ -124,6 +118,7 @@ class SingleRLAgent():
             if(self.timestep>=self.max_episode_length):
                 self.fingerlayer.fingerlayer = 0.5 * np.ones(self.ext_shape)
                 self.obs = 0.5 * np.ones(self.ext_shape)
+                #self.ext_repr.externalrepresentation = 0.5 * np.ones(self.ext_shape)
 
     def render(self, display_id=None):
         img_width = 50
@@ -171,7 +166,7 @@ class SingleRLAgent():
 
         #self.experiment_specific_setup.reset(self)
         self.ext_repr.reset()
-        self.ext_repr_other = self.ext_repr.externalrepresentation
+        self.ext_repr_other = 0.5 * np.ones(self.ext_shape) #self.ext_repr.externalrepresentation
         self.fingerlayer.reset()
         self.obs_external_world.reset(self)
 

@@ -75,7 +75,6 @@ class DQN_Agent_Double(object):
         if(perform_random_action and not deterministic):
             actions = [np.random.randint(self.n_actions), np.random.randint(self.n_actions)]
         else:
-            #states_unsqueezed = [torch.unsqueeze(ptu.from_numpy(state), dim=0) for state in states]
             states_unsqueezed = torch.stack([torch.unsqueeze(ptu.from_numpy(state), dim=0) for state in states]).transpose(0, 1)
             actions_tensors = self.policy_net(states_unsqueezed)
             action_arr = [ptu.to_numpy(actions_tensor) for actions_tensor in actions_tensors]
