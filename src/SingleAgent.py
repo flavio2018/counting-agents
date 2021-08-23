@@ -17,7 +17,7 @@ class SingleRLAgent():
         self.single_or_double = 'single'
         self.params = agent_params
         self.max_objects = n_objects if n_objects is not None else self.params['max_objects']
-        self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation']) if 'max_episode_length' not in self.params else self.params['max_episode_length']
+        self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation'], self) if 'max_episode_length' not in self.params else self.params['max_episode_length']
         #self.experiment_specific_setup = ExperimentSetup(agent_params) #AgentSetupDict[self.params['Agent_Setup']](agent_params)
         self.IsPartOfMultiAgents = True if agent_params['single_or_multi_agent'] == 'multi' else False
 
@@ -36,7 +36,7 @@ class SingleRLAgent():
 
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         max_n = self.params['max_max_objects'] if self.params['curriculum_learning'] else self.params['max_objects']
-        self.otherinteractions = OtherInteractions(self.params['task'], max_n)
+        self.otherinteractions = OtherInteractions(self, self.params['task'], max_n)
 
         # Initialize action
         self.all_actions_list, self.all_actions_dict = self.merge_actions([self.ext_repr.actions, self.fingerlayer.actions, self.otherinteractions.actions])
@@ -66,13 +66,14 @@ class SingleRLAgent():
         if(action in self.ext_repr.actions):
             self.ext_repr.step(action, self)
         if(action in self.otherinteractions.actions):
-            if (action == 'submit'):
-                self.is_submitted_ext_repr = True
-                self.submitted_ext_repr = self.ext_repr.externalrepresentation
-            elif (action == 'larger'):
-                pass
-            elif (action == 'smaller'):
-                pass
+            self.otherinteractions.step(action, self)
+            #if (action == 'submit'):
+            #    self.is_submitted_ext_repr = True
+            #    self.submitted_ext_repr = self.ext_repr.externalrepresentation
+            # elif (action == 'larger'):
+            #     pass
+            # elif (action == 'smaller'):
+            #     pass
 
         # Build action-array according to the int/string action. This is mainly for the demo mode, where actions are given
         # manually by str/int.
@@ -163,7 +164,8 @@ class SingleRLAgent():
 
     def reset(self, n_objects=None):
         self.n_objects = random.randint(1, self.max_objects) if(n_objects is None) else n_objects
-        self.max_episode_length = calc_max_episode_length(self.n_objects, self.params['observation'])
+        self.max_episode_length = calc_max_episode_length(self, self.n_objects, self.params['observation'])
+        self.IsSubmitted = False
 
         #self.experiment_specific_setup.reset(self)
         self.ext_repr.reset()
@@ -176,7 +178,7 @@ class SingleRLAgent():
 
         # Initialize other interactions: e.g. 'submit', 'larger'/'smaller,
         max_n = self.params['max_max_objects'] if self.params['curriculum_learning'] else self.params['max_objects']
-        self.otherinteractions = OtherInteractions(self.params['task'], max_n)
+        self.otherinteractions = OtherInteractions(self, self.params['task'], max_n)
 
         self.action = np.zeros(self.action_dim)
 
@@ -449,7 +451,7 @@ class OtherInteractions():
     """
     This class implements the environmental responses to actions related to communication with the other agent ('submit') or to the communication of the final answer ('larger', 'smaller').
     """
-    def __init__(self, task='comparison', max_n=1):
+    def __init__(self, agent, task='comparison', max_n=1):
         # Define task-dependent actions. # Keys will be overwritten when merged with another action-space
         if(task == 'compare'):
             self.actions = {
@@ -460,7 +462,9 @@ class OtherInteractions():
              }
         elif (task == 'classify'):
             self.actions = {i: str(i) for i in range(1, max_n+1)}
-            self.actions[max_n+1] = 'wait'
+            self.actions[max_n + 1] = 'wait'
+            if(agent.params['IsSubmitButton']):
+                self.actions[max_n + 2] = 'submit'
 
         elif (task == 'reproduce'):
             self.actions = {
@@ -475,9 +479,19 @@ class OtherInteractions():
             str_to_str[value] = value
         self.actions.update(str_to_str)
 
-def calc_max_episode_length(n_objects, observation):
+    def step(self, action, agent):
+        if(action == 'submit'):
+            if(not agent.IsSubmitted):
+                agent.timestep = agent.max_episode_length-1
+            agent.IsSubmitted = True
+
+
+def calc_max_episode_length(agent, n_objects, observation):
     if (observation == 'spatial'):
-        return (n_objects-1)
+        if(agent.params['IsSubmitButton'] or agent.params['fixed_max_episode_length']>0):
+            return agent.params['fixed_max_episode_length']
+        else:
+            return (n_objects)
     elif (observation == 'temporal'):
         if(n_objects<=3):
             return 2*n_objects+1

@@ -11,6 +11,7 @@ import pytorch_utils as ptu
 from datetime import timedelta
 #from ExperimentSetups import *
 from DQN_Agent_Single import DQN_Agent_Single
+from PPO_Agent_Single import PPO_Agent_Single
 from DQN_Agent_Double import DQN_Agent_Double
 from ReplayMemory import ReplayMemory
 from PIL import Image, ImageDraw
@@ -31,11 +32,16 @@ class RL_Trainer(object):
         if(single_or_multi_agent == 'single'):
             self.env = SingleRLAgent(params['agent_params'])
             self.env_class = SingleRLAgent
-            self.agent = DQN_Agent_Single(self.env, self.params['agent_params'])
+            if(self.params['agent_params']['RL_method'] == 'PPO'):
+                self.agent = PPO_Agent_Single(self.env, self.params['agent_params'])
+            elif(self.params['agent_params']['RL_method'] == 'DQN'):
+                self.agent = DQN_Agent_Single(self.env, self.params['agent_params'])
         elif(single_or_multi_agent == 'multi'):
             self.env = MultiAgentEnvironment(params['agent_params'])
             self.env_class = MultiAgentEnvironment
             self.agent = DQN_Agent_Double(self.env, self.params['agent_params'])
+            if (self.params['agent_params']['RL_method'] == 'PPO'):
+                print("PPO not implemented for multi-agents yet!!")
 
         self.env.reset()
 
@@ -147,6 +153,10 @@ class RL_Trainer(object):
 
                 next_state, reward, done, info = env.step(action)
                 episode_rewards.append(reward)
+                if(self.agent.params['RL_method'] == 'PPO'):
+                    # saving reward and is_terminals
+                    self.agent.buffer.rewards.append(reward)
+                    self.agent.buffer.is_terminals.append(done)
 
                 # Store the transition in memory
                 if(collect == True):
@@ -182,10 +192,11 @@ def write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, ac
         if (env.params['single_or_multi_agent'] == 'single'):
             if (t_sofar == 0):
                 print("num: ", env.n_objects)
-                binary_event_timesteps = [0]*env.max_episode_length
-                for e_i in env.event_timesteps:
-                    binary_event_timesteps[e_i] = 1
-                print("event_timesteps: ", binary_event_timesteps)
+                if(env.params['observation'] == 'temporal'):
+                    binary_event_timesteps = [0]*env.max_episode_length
+                    for e_i in env.event_timesteps:
+                        binary_event_timesteps[e_i] = 1
+                    print("event_timesteps: ", binary_event_timesteps)
             actions_during_episode.append(env.all_actions_dict[action])
         if (env.params['single_or_multi_agent'] == 'multi'):
             if (t_sofar == 0):

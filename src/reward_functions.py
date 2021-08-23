@@ -17,8 +17,9 @@ def reward_done_function_classify(reward_dict, agents):
                     reward += reward_dict['said_number_before_last_time_step'] / (agents.max_episode_length )
         else:
             if Is_agent_did_action(agents, str(agents.n_objects)):
-                reward += reward_dict['main_reward']
-                agents.done = True
+                if(not agents.params['IsSubmitButton'] or agents.IsSubmitted):
+                    reward += reward_dict['main_reward']
+                    agents.done = True
 
     if(agents.single_or_double == 'double'):
         if (agents.timestep <= agents.max_episode_length):

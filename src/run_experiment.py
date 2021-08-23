@@ -12,17 +12,17 @@ def main():
 
     parser.add_argument('--single_or_multi_agent', choices=['single', 'multi'], type=str, default='single')
     parser.add_argument('--task', type=str, choices=['compare', 'classify', 'reproduce'], default='classify')
-    parser.add_argument('--external_repr_tool', type=str, choices=['MoveAndWrite', 'WriteCoord', 'Abacus', 'SpokenWords'], default='MoveAndWrite')
-    parser.add_argument('--observation', type=str, choices=['spatial', 'temporal'], default='temporal')
+    parser.add_argument('--external_repr_tool', type=str, choices=['MoveAndWrite', 'WriteCoord', 'Abacus', 'SpokenWords'], default='WriteCoord')
+    parser.add_argument('--observation', type=str, choices=['spatial', 'temporal'], default='spatial')
 
 
-    parser.add_argument('--max_objects', type=int, default=2)
+    parser.add_argument('--max_objects', type=int, default=5)
     #parser.add_argument('--max_episode_length', type=int, default=5)
     parser.add_argument('--num_iterations', type=int, default=100000)
     # If curriculum_learning is True, max_object will increment by 1 from initial max_objects, whenever the agent reaches a mean
     # reward of 0.98. Incrementation will stop at max_max_objects.
     parser.add_argument('--curriculum_learning', type=bool, default=True)
-    parser.add_argument('--max_max_objects', type=int, default=6)
+    parser.add_argument('--max_max_objects', type=int, default=9)
 
     parser.add_argument('--debug_mode', type=bool, default=True)
     parser.add_argument('--exp_name', type=str, default='TODO')
@@ -62,7 +62,7 @@ def main():
 
     # Spatial Classify MoveAndWrite
     reward_dict = {
-        'moved_or_mod_ext': +0.3,
+        'moved_or_mod_ext': +0.1,
         'said_number_before_last_time_step': -0.3,
         'main_reward': +0.7
     }
@@ -74,17 +74,20 @@ def main():
     #    'main_reward': +1.0
     #}
 
-    obs_ext_shape = (4,4)
+    obs_ext_shape = (9,1)
 
     agent_params = {
+        'RL_method': 'PPO',
         'max_objects': params['max_objects'],
         'obs_shape': obs_ext_shape,
         'ext_shape': obs_ext_shape,
+        'IsSubmitButton': False,
+        'fixed_max_episode_length': 4, # if IsSubmitButton there will be a fixed maximum length until the agent can submit the answer. Can do before as well.
         'BATCH_SIZE': params['BATCH_SIZE'],
-        'LEARNING_RATE': 5e-3,
+        'LEARNING_RATE': 5e-4,
         'target_update_freq': 10,
-        'MEMORY_CAPACITY': 100,
-        'GAMMA': 0.5,
+        'MEMORY_CAPACITY': 200,
+        'GAMMA': 0.3,
         'pretrained_model_path': None,
         # '/home/silvester/programming/rl-single-agent-numbers/counting-agents/src/../data/TODO_13-05-2021_13-10-36/model.pt', #'/home/silvester/programming/rl-single-agent-numbers/counting-agents/src/../data/TODO_12-05-2021_10-17-59/model.pt', # or None
         'Is_pretrained_model': False
@@ -94,7 +97,7 @@ def main():
     epsilon_greedy_args = {
         'EPS_START': 0.9,
         'EPS_END': 0.2,
-        'EPS_END_EPISODE': 0.02,  # 0.0: reaches eps_end at 0th episode. 1.0 reaches eps_end at the end of all episodes
+        'EPS_END_EPISODE': 0.04,  # 0.0: reaches eps_end at 0th episode. 1.0 reaches eps_end at the end of all episodes
     }
 
 
