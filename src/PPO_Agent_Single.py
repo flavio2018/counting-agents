@@ -16,7 +16,8 @@ from torch.distributions import Categorical
 import numpy as np
 import pytorch_utils as ptu
 from ReplayMemory import ReplayMemory, NaivePrioritizedBuffer
-
+#from QNets import N_Concat_CNNs, CNN
+from ActorCriticNets import CNN, Actor_CNN, Actor_FC, Critic_FC
 
 ################################## set device ##################################
 
@@ -59,14 +60,27 @@ class RolloutBuffer:
 
 
 class ActorCritic(nn.Module):
-    def __init__(self, state_dim, action_dim, has_continuous_action_space, action_std_init):
+    def __init__(self, state_dim, action_dim, has_continuous_action_space, action_std_init, env):
         super(ActorCritic, self).__init__()
+
+        self.params = env.params
 
         self.has_continuous_action_space = has_continuous_action_space
 
         if has_continuous_action_space:
             self.action_dim = action_dim
             self.action_var = torch.full((action_dim,), action_std_init * action_std_init).to(device)
+
+
+        # Observation and action sizes for individual agents
+        self.ob_dim  = env.state.shape  # Assumes that all agents have same state-dim as agent[0]
+        self.ext_shape = env.ext_shape
+        dimmy = 1 if self.ext_shape[1] == 1 else 2
+
+        print("ob_dim: ", self.ob_dim)
+        n_channels, screen_height, screen_width = self.ob_dim
+        self.ac_dim = env.action.shape
+        self.n_actions = self.ac_dim[0]
 
         # actor
         if has_continuous_action_space :
@@ -79,6 +93,11 @@ class ActorCritic(nn.Module):
                             nn.Tanh()
                         )
         else:
+            if(self.params['net_type'] == 'CNN'):
+                self.actor = Actor_CNN(n_channels, self.n_actions, example_input=env.state, dim=dimmy)
+            elif (self.params['net_type'] == 'FC'):
+                self.actor = Actor_FC(state_dim, action_dim)
+            '''
             self.actor = nn.Sequential(
                             nn.Linear(state_dim, 64),
                             nn.Tanh(),
@@ -87,9 +106,15 @@ class ActorCritic(nn.Module):
                             nn.Linear(64, action_dim),
                             nn.Softmax(dim=-1)
                         )
+            '''
 
 
         # critic
+        if (self.params['net_type'] == 'CNN'):
+            self.critic = CNN(n_channels, num_actions=1, example_input=env.state, dim=dimmy)
+        elif (self.params['net_type'] == 'FC'):
+            self.critic = Critic_FC(state_dim)
+        '''
         self.critic = nn.Sequential(
                         nn.Linear(state_dim, 64),
                         nn.Tanh(),
@@ -97,6 +122,7 @@ class ActorCritic(nn.Module):
                         nn.Tanh(),
                         nn.Linear(64, 1)
                     )
+        '''
 
     def set_action_std(self, new_action_std):
 
@@ -141,6 +167,7 @@ class ActorCritic(nn.Module):
                 action = action.reshape(-1, self.action_dim)
 
         else:
+            #state = preprocess_input(self.params, state)
             action_probs = self.actor(state)
             dist = Categorical(action_probs)
 
@@ -182,14 +209,14 @@ class PPO_Agent_Single:
 
         self.buffer = RolloutBuffer()
 
-        self.policy = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
+        self.policy = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init, self.env).to(device)
         self.policy_net = self.policy.actor
         self.optimizer = torch.optim.Adam([
                         {'params': self.policy.actor.parameters(), 'lr': lr_actor},
                         {'params': self.policy.critic.parameters(), 'lr': lr_critic}
                     ])
 
-        self.policy_old = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init).to(device)
+        self.policy_old = ActorCritic(state_dim, action_dim, has_continuous_action_space, action_std_init, self.env).to(device)
         self.policy_old.load_state_dict(self.policy.state_dict())
 
         self.MseLoss = nn.MSELoss()
@@ -248,7 +275,8 @@ class PPO_Agent_Single:
 
         else:
             with torch.no_grad():
-                state = torch.FloatTensor(state.flatten()).to(device)
+                state = preprocess_input(self.params, state)
+                state = torch.FloatTensor(state).to(device)
                 action, action_logprob = self.policy_old.act(state)
 
             self.buffer.states.append(state)
@@ -341,3 +369,13 @@ class PPO_Agent_Single:
         else:
             self.device = torch.device("cpu")
             print("GPU not detected. Defaulting to CPU.")
+
+
+def preprocess_input(params, state):
+    if (isinstance(state, (np.ndarray, np.generic))):
+        state = ptu.from_numpy(state)
+    if (params['net_type'] == 'CNN'):
+        state = state.unsqueeze(dim=0)
+    elif (params['net_type'] == 'FC'):
+        state = state.flatten()
+    return state

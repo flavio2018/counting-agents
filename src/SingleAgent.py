@@ -506,7 +506,7 @@ def calc_event_timesteps(n_objects, max_episode_length=None):
     #if(n_objects<=3):
     #    return random.sample(range(1, max_episode_length), n_objects)
     big_timestep_range_from_n = 5
-    small_timestep_range = [2, 2]
+    small_timestep_range = [1, 2]
     big_timestep_range = [2, 2]
     timestep_range = small_timestep_range
     event_timesteps = []
