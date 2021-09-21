@@ -22,7 +22,7 @@ def main():
     # If curriculum_learning is True, max_object will increment by 1 from initial max_objects, whenever the agent reaches a mean
     # reward of 0.98. Incrementation will stop at max_max_objects.
     parser.add_argument('--curriculum_learning', type=bool, default=True)
-    parser.add_argument('--max_max_objects', type=int, default=5)
+    parser.add_argument('--max_max_objects', type=int, default=2)
 
     parser.add_argument('--debug_mode', type=bool, default=True)
     parser.add_argument('--exp_name', type=str, default='TODO')

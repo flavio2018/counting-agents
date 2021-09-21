@@ -4,7 +4,9 @@ This file contains some utility functions used in different classes.
 
 import torch
 from torch import nn
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
+import os
+
 #from fonts.ttf import AmaticSC
 
 
@@ -51,12 +53,22 @@ def concat_2_imgs_v(im1, im2, dist=0):
     return dst
 
 
+# ONLY ADDS EMPTY SPACE RIGHT NOW
 def annotate_below(imgy, text):
     text_img = Image.new("RGBA", (int(imgy.width), int(imgy.height/4)), (255, 255, 255, 0))
     text_draw = ImageDraw.Draw(text_img)
     # font = ImageFont.load("arial.ttf")
-    text_draw.text((0, 0), text, fill=0)
+    #text_draw.text((0, 0), text, fill=0)
     imgy = concat_imgs_v([imgy, text_img])
+    return imgy
+
+def annotate_left(imgy, text):
+    text_img = Image.new("RGBA", (int(imgy.width/10), int(imgy.height)), (255, 255, 255, 0))
+    text_draw = ImageDraw.Draw(text_img)
+    font_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), '/Arial.ttf')
+    fnt = ImageFont.truetype(font_path, 4)
+    text_draw.text((0, 0), text, fill=0, font=fnt)
+    imgy = concat_imgs_h([text_img, imgy])
     return imgy
 
 def annotate_nodes(imgy, text_list):

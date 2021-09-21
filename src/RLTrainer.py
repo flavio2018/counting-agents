@@ -68,8 +68,10 @@ class RL_Trainer(object):
         log_loss_frequ = self.params['log_loss_frequ']
         best_mean_reward = 0.0
         itr = 0
+        Is_master_all = False
+        master_episodes = {}
 
-        while(itr < num_iterations):
+        while(itr < num_iterations and Is_master_all == False):
             if(itr % self.params['collect_every_n_iterations'] == 0):
                 _, _ = self.run_episodes_with_agent(train_episode=itr, writer=None, collect=True, eval=False, n_episodes=self.params['collect_n_episodes_per_itr'])
             if(itr % self.params['eval_every_n_iterations'] == 0):
@@ -98,19 +100,27 @@ class RL_Trainer(object):
                 summed_loss = 0
 
             if (itr % self.params['eval_every_n_iterations'] == 0):
-                if(mean_solved_train>0.98 and self.params['curriculum_learning'] and self.agent.env.max_objects < self.params['max_max_objects']):
-                    print("=========================== \n ===========================")
-                    print("TRAIN FROM 1 TO ", self.agent.env.max_objects + 1)
-                    print("=========================== \n ===========================")
-                    # Run evaluation runs with master=True to save learned representation when task is mastered:
-                    mean_reward_train, mean_solved_train = self.run_episodes_with_agent(train_episode=itr, writer=writer, collect=False,
-                                                                     eval=True,
-                                                                     n_episodes=self.params['eval_n_episodes_per_itr'],
-                                                                     master=True)
-                    self.agent.env.max_objects += 1
-                    max_objects = self.agent.env.max_objects
-                    self.agent.env = self.env_class(self.params['agent_params'], max_objects)
-                    self.agent.memory = ReplayMemory(self.params['agent_params']['MEMORY_CAPACITY'])
+                if(mean_solved_train>0.98):
+                    master_episodes[self.agent.env.max_objects] = itr
+                    if(self.agent.env.max_objects == self.params['max_max_objects']):
+                        Is_master_all = True
+                        # Run evaluation runs with master=True to save learned representation when task is mastered:
+                        mean_reward_train, mean_solved_train = self.run_episodes_with_agent(train_episode=itr, writer=writer, collect=False,
+                                                                         eval=True,
+                                                                         n_episodes=self.params['eval_n_episodes_per_itr'],
+                                                                         master=True)
+
+                    if(self.params['curriculum_learning'] and self.agent.env.max_objects < self.params['max_max_objects']):
+                        print("=========================== \n ===========================")
+                        print("TRAIN FROM 1 TO ", self.agent.env.max_objects + 1)
+                        print("=========================== \n ===========================")
+
+                        self.agent.env.max_objects += 1
+                        max_objects = self.agent.env.max_objects
+                        self.agent.env = self.env_class(self.params['agent_params'], max_objects)
+                        self.agent.memory = ReplayMemory(self.params['agent_params']['MEMORY_CAPACITY'])
+
+
 
             itr += 1
 
@@ -120,6 +130,10 @@ class RL_Trainer(object):
         # Save model
         torch.save(self.agent.policy_net.state_dict(), model_path)
         print("Model saved in: ", model_path)
+        # Save master episodes
+        _dir = self.params['logdir']
+        with open(_dir + '/master_episodes.pkl', 'wb') as f:
+            pickle.dump(master_episodes, f, pickle.HIGHEST_PROTOCOL)
 
         elapsed = timeit.default_timer() - start_time
         print("Elapsed time: {}".format(timedelta(seconds=elapsed)))
@@ -235,7 +249,7 @@ def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofa
                 space_img = Image.fromarray(np.ones(agenty.ext_shape[1], dtype=np.uint8)*255).resize((img_height//4, img_height), resample=0)
                 ext_repr_img = utils.concat_imgs_h([ext_repr_img, space_img], dist=0)
 
-            ext_repr_img = np.asarray( ext_repr_img ).astype(np.uint8).transpose([2,0,1])
+            #ext_repr_img = np.asarray( ext_repr_img ).astype(np.uint8).transpose([2,0,1])
             ext_repr_imgs[agenty.n_objects].append(ext_repr_img)
 
             ## Accumulate representations in dict:
@@ -249,24 +263,37 @@ def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofa
 def write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, ext_repr, master, mean_reward, mean_solved, dir_path):
     if (train_episode % 1000 == 0 or master):
         if (eval and writer is not None):
-            total_imgs = [np.expand_dims(ext_repr_imgs[i][0], axis=0) for i in range(1, env.max_objects + 1)]
+            #ext_repr_img = np.asarray(ext_repr_img).astype(np.uint8).transpose([2, 0, 1])
+            #total_imgs = [np.expand_dims(ext_repr_imgs[i][0], axis=0) for i in range(1, env.max_objects + 1)]
+            total_imgs_tensor = [np.expand_dims(np.asarray(ext_repr_imgs[i][0]).astype(np.uint8).transpose([2, 0, 1]), axis=0) for i in range(0, env.max_objects + 1)]
+            total_imgs = [ext_repr_imgs[i][0] for i in range(0, env.max_objects + 1)]
             if(env.dimmy==1):
-                total_imgs_tensor = np.concatenate(total_imgs, axis=2)
+                total_imgs_tensor = np.concatenate(total_imgs_tensor, axis=2)
+                total_imgs = utils.concat_imgs_v(total_imgs, dist=10)
             elif(env.dimmy==2):
-                total_imgs_tensor = np.concatenate(total_imgs, axis=0)
+                total_imgs_tensor = np.concatenate(total_imgs_tensor, axis=0)
+                total_imgs = utils.concat_imgs_h(total_imgs, dist=10)
 
             writingOn = 'example_representations_/'
             writingOn += "" if master == False else "master"
             writer.add_images(writingOn, total_imgs_tensor, train_episode)
 
-            ## Save all representations to array in same directory
-            # Create directory
-            _dir = dir_path + '/ext_representations'
-            if not os.path.exists(_dir):
-                os.makedirs(_dir)
-            # DUMP DICT OR DATAFRAME IN _dir
-            with open(_dir + '/external_representations.pkl', 'wb') as f:
-                pickle.dump(ext_repr, f, pickle.HIGHEST_PROTOCOL)
+            if (master):
+                # Create directory
+                _dir = dir_path + '/ext_representations'
+                if not os.path.exists(_dir):
+                    os.makedirs(_dir)
+
+                # Save image in same directory
+                file_name = _dir + '/master_representation.png'
+                total_imgs.save(file_name)
+
+                ## Save all representations to array in same directory
+                # DUMP DICT OR DATAFRAME IN _dir
+                with open(_dir + '/external_representations.pkl', 'wb') as f:
+                    pickle.dump(ext_repr, f, pickle.HIGHEST_PROTOCOL)
+
+
 
     if (eval and writer is not None):
         writingOn = 'metrics/mean_rewards'
