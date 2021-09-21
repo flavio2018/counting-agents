@@ -188,6 +188,12 @@ class PPO_Agent_Single:
         state_dim = torch.from_numpy(self.env.state).flatten().shape[0]
         action_dim = self.ac_dim = self.n_actions = self.env.action.shape[0]
 
+        # Observation and action sizes for individual agents
+        self.ob_dim  = self.env.state.shape  # Assumes that all agents have same state-dim as agent[0]
+        self.ext_shape = self.env.ext_shape
+        dimmy = 1 if self.ext_shape[1] == 1 else 2
+        self.dimmy = dimmy
+
         has_continuous_action_space = False
         self.has_continuous_action_space = has_continuous_action_space
         action_std_init = 0.6

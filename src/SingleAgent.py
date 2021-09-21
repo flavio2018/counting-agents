@@ -51,6 +51,8 @@ class SingleRLAgent():
 
         self.reward_dict = self.params['reward_dict'] if 'main_reward' in self.params else ZeroRewardDict
         self.reward_done_function = RewardFunctionDict[self.params['task']]
+        dimmy = 1 if self.ext_shape[1] == 1 else 2
+        self.dimmy = dimmy
 
         self.reset(self.n_objects)
 
@@ -163,7 +165,7 @@ class SingleRLAgent():
         return total_img
 
     def reset(self, n_objects=None):
-        self.n_objects = random.randint(1, self.max_objects) if(n_objects is None) else n_objects
+        self.n_objects = random.randint(0, self.max_objects) if(n_objects is None) else n_objects
         self.max_episode_length = calc_max_episode_length(self, self.n_objects, self.params['observation'])
         self.IsSubmitted = False
 
@@ -255,6 +257,10 @@ class ObsExternalWorld():
         agent.obs = np.zeros(agent.obs_shape)
         agent.default_obs = agent.obs
         agent.event_timesteps = calc_event_timesteps(agent.n_objects, max_episode_length=agent.max_episode_length)  #
+        if(agent.n_objects==0):
+            agent.max_episode_length = 4
+        else:
+            agent.max_episode_length = agent.event_timesteps[-1] + 1
         agent.event_obs = np.zeros(agent.obs_shape)
         middle_x = agent.obs_shape[0] // 2
         middle_y = agent.obs_shape[1] // 2
@@ -392,7 +398,7 @@ class WriteCoord(ExternalTool):
     def step(self, action, agent):
         # This line implements if ext_repr[coord]==0 --> set it to 1. if==1 set to 0.
         coord_int = int(action[-1])
-        self.externalrepresentation[coord_int, 0] = -self.externalrepresentation[coord_int, 0] + 1
+        self.externalrepresentation[coord_int, 0] = 1 #If you want to be able to delete as well use: -self.externalrepresentation[coord_int, 0] + 1
 
     def reset(self):
         self.externalrepresentation = np.zeros(self.ext_shape)
@@ -461,7 +467,7 @@ class OtherInteractions():
                 3: 'equal',
              }
         elif (task == 'classify'):
-            self.actions = {i: str(i) for i in range(1, max_n+1)}
+            self.actions = {i: str(i) for i in range(0, max_n+1)}
             self.actions[max_n + 1] = 'wait'
             if(agent.params['IsSubmitButton']):
                 self.actions[max_n + 2] = 'submit'
@@ -493,21 +499,23 @@ def calc_max_episode_length(agent, n_objects, observation):
         else:
             return (n_objects)
     elif (observation == 'temporal'):
+        '''
         if(n_objects<=3):
             return 2*n_objects+1
         big_timestep_range_from_n = 5
         max_time_length = min(big_timestep_range_from_n - 1, n_objects) * 2 # + max(0,max_objects-big_timestep_range_from_n)*3
         if (n_objects >= big_timestep_range_from_n):
             max_time_length += (n_objects - big_timestep_range_from_n + 1) * 3
-        return 2*n_objects+1
+        '''
+        return 3*n_objects+1
 
 
 def calc_event_timesteps(n_objects, max_episode_length=None):
     #if(n_objects<=3):
     #    return random.sample(range(1, max_episode_length), n_objects)
     big_timestep_range_from_n = 5
-    small_timestep_range = [1, 2]
-    big_timestep_range = [2, 2]
+    small_timestep_range = [2, 3]
+    big_timestep_range = [2, 3]
     timestep_range = small_timestep_range
     event_timesteps = []
     t_n = 0

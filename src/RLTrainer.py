@@ -17,6 +17,7 @@ from ReplayMemory import ReplayMemory
 from PIL import Image, ImageDraw
 import utils
 import pickle
+import os
 
 
 class RL_Trainer(object):
@@ -131,7 +132,8 @@ class RL_Trainer(object):
         summed_rewards = 0
         summed_totals = 0
         env = self.agent.env
-        ext_repr_imgs = {i: [] for i in range(1, self.agent.env.max_objects+1)}
+        ext_repr_imgs = {i: [] for i in range(0, self.agent.env.max_objects+1)}
+        ext_repr = {i: [] for i in range(0, self.agent.env.max_objects + 1)}
 
         for i_episode in range(n_episodes):
             state = env.reset()
@@ -149,7 +151,7 @@ class RL_Trainer(object):
                 #env.action = np.zeros(env.action_dim)
                 #env.action[env.all_actions_dict_inv[action]] = 1
                 write_each_time_step(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode,
-                                     action)
+                                     action, master)
 
                 next_state, reward, done, info = env.step(action)
                 episode_rewards.append(reward)
@@ -173,20 +175,23 @@ class RL_Trainer(object):
                     summed_totals += info['IsSolved']
 
                 #write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, action)
-            ext_repr_imgs = write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, ext_repr_imgs, master)
+            ext_repr_imgs = write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, ext_repr_imgs, ext_repr, master)
         mean_reward = summed_rewards/n_episodes
         mean_solved = summed_totals/n_episodes
-        write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, master, mean_reward, mean_solved)
+        write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, ext_repr, master, mean_reward, mean_solved, self.params['logdir'])
 
         return mean_reward, mean_solved
 
 
 
-def write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, action):
-    if (eval and writer is not None and train_episode % 1000 == 0):
-        if (i_episode < 5):
-            writingOn = 'whole_episode_' + str(train_episode) + '/' + str(i_episode)
-            writer.add_image(writingOn, np.asarray(env.render()).astype(np.uint8).transpose([2, 0, 1]), t_sofar)
+def write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, action, master):
+    if (eval and writer is not None):
+        if(train_episode % 10000 == 0 or master):
+            if (i_episode < 5):
+                writingOn = 'whole_episode_' + str(train_episode) + '/' + str(i_episode)
+                if(master):
+                    writingOn = 'master_' + writingOn
+                writer.add_image(writingOn, np.asarray(env.render()).astype(np.uint8).transpose([2, 0, 1]), t_sofar)
 
     if (eval and i_episode == 0):  #
         if (env.params['single_or_multi_agent'] == 'single'):
@@ -203,7 +208,7 @@ def write_each_time_step(env,eval, writer, train_episode, i_episode, t_sofar, ac
                 print("num: ", [env.agents[0].n_objects, env.agents[1].n_objects])
             print("act ", t_sofar, ": ", [env.agents[0].all_actions_dict[action_i] for action_i in action])
 
-def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, ext_repr_imgs, master):
+def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofar, actions_during_episode, ext_repr_imgs, ext_repr, master):
     if (env.params['single_or_multi_agent'] == 'single'):
         if (eval and i_episode == 0):
             print("Acts: ", actions_during_episode)
@@ -215,6 +220,7 @@ def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofa
             else:
                 agenty = env.agents[0]
 
+            ## Save 1 example representation to tensorboard
             ext_img_shape = (img_height * agenty.ext_shape[1], img_height * agenty.ext_shape[0])
             ext_repr_img = Image.fromarray(agenty.ext_repr.externalrepresentation * 255).resize(ext_img_shape, resample=0)
             ext_repr_img = utils.add_grid_lines(ext_repr_img, agenty.ext_repr.externalrepresentation)
@@ -232,16 +238,35 @@ def write_after_each_episode(env, eval, writer, train_episode, i_episode, t_sofa
             ext_repr_img = np.asarray( ext_repr_img ).astype(np.uint8).transpose([2,0,1])
             ext_repr_imgs[agenty.n_objects].append(ext_repr_img)
 
+            ## Accumulate representations in dict:
+            ext_repr[agenty.n_objects].append(agenty.ext_repr.externalrepresentation)
+
+
+
+
             return ext_repr_imgs
 
-def write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, master, mean_reward, mean_solved):
+def write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar, ext_repr_imgs, ext_repr, master, mean_reward, mean_solved, dir_path):
     if (train_episode % 1000 == 0 or master):
         if (eval and writer is not None):
             total_imgs = [np.expand_dims(ext_repr_imgs[i][0], axis=0) for i in range(1, env.max_objects + 1)]
-            total_imgs_tensor = np.concatenate(total_imgs, axis=0)
+            if(env.dimmy==1):
+                total_imgs_tensor = np.concatenate(total_imgs, axis=2)
+            elif(env.dimmy==2):
+                total_imgs_tensor = np.concatenate(total_imgs, axis=0)
+
             writingOn = 'example_representations_/'
             writingOn += "" if master == False else "master"
             writer.add_images(writingOn, total_imgs_tensor, train_episode)
+
+            ## Save all representations to array in same directory
+            # Create directory
+            _dir = dir_path + '/ext_representations'
+            if not os.path.exists(_dir):
+                os.makedirs(_dir)
+            # DUMP DICT OR DATAFRAME IN _dir
+            with open(_dir + '/external_representations.pkl', 'wb') as f:
+                pickle.dump(ext_repr, f, pickle.HIGHEST_PROTOCOL)
 
     if (eval and writer is not None):
         writingOn = 'metrics/mean_rewards'

@@ -26,6 +26,7 @@ class DQN_Agent_Single(object):
         self.ob_dim  = self.env.state.shape  # Assumes that all agents have same state-dim as agent[0]
         self.ext_shape = self.env.ext_shape
         dimmy = 1 if self.ext_shape[1] == 1 else 2
+        self.dimmy = dimmy
 
         print("ob_dim: ", self.ob_dim)
         n_channels, screen_height, screen_width = self.ob_dim

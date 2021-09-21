@@ -26,6 +26,8 @@ class MultiAgentEnvironment():
         self.reward_dict = self.params['reward_dict'] if 'main_reward' in self.params else ZeroRewardDict
         self.reward_done_function = RewardFunctionDict[self.params['task']]
         self.gray_image = 0.5 * np.ones(self.agents[0].ext_shape)
+        dimmy = 1 if self.agents[0].ext_shape[1] == 1 else 2
+        self.dimmy = dimmy
 
         self.reset()
 
@@ -76,7 +78,7 @@ class MultiAgentEnvironment():
             self.agents[1].ext_repr_other = self.gray_image
 
     def reset(self, n_objects = None):
-        n_range = np.arange(1, self.max_objects + 1)
+        n_range = np.arange(0, self.max_objects + 1)
         if(n_objects is None):
             n_objects = np.random.choice(n_range, 2, replace=True)
 

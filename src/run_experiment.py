@@ -12,17 +12,17 @@ def main():
 
     parser.add_argument('--single_or_multi_agent', choices=['single', 'multi'], type=str, default='single')
     parser.add_argument('--task', type=str, choices=['compare', 'classify', 'reproduce'], default='classify')
-    parser.add_argument('--external_repr_tool', type=str, choices=['MoveAndWrite', 'WriteCoord', 'Abacus', 'SpokenWords'], default='Abacus')
+    parser.add_argument('--external_repr_tool', type=str, choices=['MoveAndWrite', 'WriteCoord', 'Abacus', 'SpokenWords'], default='WriteCoord')
     parser.add_argument('--observation', type=str, choices=['spatial', 'temporal'], default='temporal')
 
 
-    parser.add_argument('--max_objects', type=int, default=2)
+    parser.add_argument('--max_objects', type=int, default=1)
     #parser.add_argument('--max_episode_length', type=int, default=5)
     parser.add_argument('--num_iterations', type=int, default=100000)
     # If curriculum_learning is True, max_object will increment by 1 from initial max_objects, whenever the agent reaches a mean
     # reward of 0.98. Incrementation will stop at max_max_objects.
     parser.add_argument('--curriculum_learning', type=bool, default=True)
-    parser.add_argument('--max_max_objects', type=int, default=9)
+    parser.add_argument('--max_max_objects', type=int, default=5)
 
     parser.add_argument('--debug_mode', type=bool, default=True)
     parser.add_argument('--exp_name', type=str, default='TODO')
@@ -74,11 +74,11 @@ def main():
     #    'main_reward': +1.0
     #}
 
-    obs_ext_shape = (4,4)
+    obs_ext_shape = (9,1)
 
     agent_params = {
         'RL_method': 'PPO',
-        'net_type': 'CNN', #FC or CNN
+        'net_type': 'FC', #FC or CNN
         'max_objects': params['max_objects'],
         'obs_shape': obs_ext_shape,
         'ext_shape': obs_ext_shape,
