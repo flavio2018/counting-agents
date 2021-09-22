@@ -102,14 +102,15 @@ class RL_Trainer(object):
             if (itr % self.params['eval_every_n_iterations'] == 0):
                 if(mean_solved_train>0.98):
                     master_episodes[self.agent.env.max_objects] = itr
+                    mean_reward_train, mean_solved_train = self.run_episodes_with_agent(train_episode=itr,
+                                                                                        writer=writer, collect=False,
+                                                                                        eval=True,
+                                                                                        n_episodes=self.params[
+                                                                                            'eval_n_episodes_per_itr'],
+                                                                                        master=True)
                     if(self.agent.env.max_objects == self.params['max_max_objects']):
                         Is_master_all = True
                         # Run evaluation runs with master=True to save learned representation when task is mastered:
-                        mean_reward_train, mean_solved_train = self.run_episodes_with_agent(train_episode=itr, writer=writer, collect=False,
-                                                                         eval=True,
-                                                                         n_episodes=self.params['eval_n_episodes_per_itr'],
-                                                                         master=True)
-
                     if(self.params['curriculum_learning'] and self.agent.env.max_objects < self.params['max_max_objects']):
                         print("=========================== \n ===========================")
                         print("TRAIN FROM 1 TO ", self.agent.env.max_objects + 1)
@@ -267,6 +268,20 @@ def write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar,
             #total_imgs = [np.expand_dims(ext_repr_imgs[i][0], axis=0) for i in range(1, env.max_objects + 1)]
             total_imgs_tensor = [np.expand_dims(np.asarray(ext_repr_imgs[i][0]).astype(np.uint8).transpose([2, 0, 1]), axis=0) for i in range(0, env.max_objects + 1)]
             total_imgs = [ext_repr_imgs[i][0] for i in range(0, env.max_objects + 1)]
+
+            min_examples = 10000
+            for i in range(0, env.max_objects + 1):
+                if(len(ext_repr_imgs[i]) < min_examples):
+                    min_examples = len(ext_repr_imgs[i])
+            example_repr_for_all_numbers_list = []
+            show_n_examples = min(min_examples, 10)
+            for j in range(show_n_examples):
+                j_example_repr_for_all_numbers = [ext_repr_imgs[i][j] for i in range(0, env.max_objects + 1)]
+                j_example_repr_for_all_numbers = utils.concat_imgs_h(j_example_repr_for_all_numbers, dist=50)
+                example_repr_for_all_numbers_list.append(j_example_repr_for_all_numbers)
+
+            all_example_repr = utils.concat_imgs_v(example_repr_for_all_numbers_list, dist=50) #.resize(env.max_objects*100,show_n_examples*100*10)
+
             if(env.dimmy==1):
                 total_imgs_tensor = np.concatenate(total_imgs_tensor, axis=2)
                 total_imgs = utils.concat_imgs_v(total_imgs, dist=10)
@@ -279,14 +294,23 @@ def write_after_evaluation(env, eval, writer, train_episode, i_episode, t_sofar,
             writer.add_images(writingOn, total_imgs_tensor, train_episode)
 
             if (master):
+
+                if (env.params['single_or_multi_agent'] == 'single'):
+                    agenty = env
+                else:
+                    agenty = env.agents[0]
+
                 # Create directory
                 _dir = dir_path + '/ext_representations'
                 if not os.path.exists(_dir):
                     os.makedirs(_dir)
 
                 # Save image in same directory
-                file_name = _dir + '/master_representation.png'
+                file_name = _dir + '/' + agenty.params['exp_name'] + '_master_representation.png'
                 total_imgs.save(file_name)
+
+                file_name = _dir + '/' + agenty.params['exp_name'] + '_master_representations.png'
+                all_example_repr.save(file_name)
 
                 ## Save all representations to array in same directory
                 # DUMP DICT OR DATAFRAME IN _dir

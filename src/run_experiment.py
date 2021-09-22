@@ -3,6 +3,7 @@ import time
 import sys
 from RLTrainer import RL_Trainer
 import cProfile
+from plot_utils import *
 
 
 def main():
@@ -12,7 +13,7 @@ def main():
 
     parser.add_argument('--single_or_multi_agent', choices=['single', 'multi'], type=str, default='single')
     parser.add_argument('--task', type=str, choices=['compare', 'classify', 'reproduce'], default='classify')
-    parser.add_argument('--external_repr_tool', type=str, choices=['MoveAndWrite', 'WriteCoord', 'Abacus', 'SpokenWords'], default='WriteCoord')
+    parser.add_argument('--external_repr_tool', type=str, choices=['MoveAndWrite', 'WriteCoord', 'Abacus', 'SpokenWords'], default='Abacus')
     parser.add_argument('--observation', type=str, choices=['spatial', 'temporal'], default='temporal')
 
 
@@ -23,6 +24,7 @@ def main():
     # reward of 0.98. Incrementation will stop at max_max_objects.
     parser.add_argument('--curriculum_learning', type=bool, default=True)
     parser.add_argument('--max_max_objects', type=int, default=2)
+    parser.add_argument('--obs_ext_shape', nargs='+', type=int, default=(10,1))
 
     parser.add_argument('--debug_mode', type=bool, default=True)
     parser.add_argument('--exp_name', type=str, default='TODO')
@@ -74,14 +76,14 @@ def main():
     #    'main_reward': +1.0
     #}
 
-    obs_ext_shape = (9,1)
+    #obs_ext_shape = (9,1)
 
     agent_params = {
         'RL_method': 'PPO',
         'net_type': 'FC', #FC or CNN
         'max_objects': params['max_objects'],
-        'obs_shape': obs_ext_shape,
-        'ext_shape': obs_ext_shape,
+        'obs_shape': tuple(params['obs_ext_shape']),
+        'ext_shape': tuple(params['obs_ext_shape']),
         'IsSubmitButton': False,
         'fixed_max_episode_length': 4, # if IsSubmitButton there will be a fixed maximum length until the agent can submit the answer. Can do before as well.
         'BATCH_SIZE': params['BATCH_SIZE'],
@@ -91,7 +93,8 @@ def main():
         'GAMMA': 0.3,
         'pretrained_model_path': None,
         # '/home/silvester/programming/rl-single-agent-numbers/counting-agents/src/../data/TODO_13-05-2021_13-10-36/model.pt', #'/home/silvester/programming/rl-single-agent-numbers/counting-agents/src/../data/TODO_12-05-2021_10-17-59/model.pt', # or None
-        'Is_pretrained_model': False
+        'Is_pretrained_model': False,
+        'exp_name': params['exp_name']
     }
     # TODO_07 - 05 - 2021_17 - 03 - 15        5 objects, non-exclusive numbers: 86%
     # TODO_12-05-2021_13-41-46 same but 90 percent
@@ -125,6 +128,12 @@ def main():
     separator = '_'
     print(separator.join(exp_name))
     logdir = separator.join(exp_name)
+    if(args.exp_name != 'TODO'):
+        data_path = data_path + '/' + args.exp_name
+
+    if not(os.path.exists(data_path)):
+        os.makedirs(data_path)
+
     logdir = os.path.join(data_path, logdir)
     params['logdir'] = logdir
     if not(os.path.exists(logdir)):
@@ -134,6 +143,33 @@ def main():
 
     rl_trainer = RL_Trainer(params)
     rl_trainer.run_training_loop(params['num_iterations'])
+
+    plot_and_save_analysis(logdir, params['exp_name'])
+
+
+def plot_and_save_analysis(exp_dir, exp_name):
+    # Load master episodes
+    file_dir = exp_dir + '/master_episodes.pkl'
+    with open(file_dir, 'rb') as f:
+        master_episodes = pickle.load(f)
+
+    # Plot and save master episodes
+    file_path = exp_dir + '/' + exp_name + '_master_episodes.svg'
+    plot_and_save_master_episodes(master_episodes, file_path)
+
+    # Load external representations
+    file_dir = exp_dir + '/ext_representations/external_representations.pkl'
+    with open(file_dir, 'rb') as f:
+        ext_repr = pickle.load(f)
+
+    # Plot and save token positions of external representations if task == Abacus
+    file_path = exp_dir + '/' + exp_name + '_token_positions.svg'
+    plot_and_save_token_positions_of_reprs(ext_repr, file_path=file_path)
+
+    # Plot and save correlations between the external representations
+    file_path = exp_dir + '/' + exp_name + '_ext_repr_correlation.svg'
+    plot_and_save_external_repr_correlation(ext_repr, task_description='', file_path=file_path)
+
 
 
 if __name__ == "__main__":
