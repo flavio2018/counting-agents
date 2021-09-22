@@ -6,7 +6,7 @@ args=(
     # Type of External tool: ['MoveAndWrite', 'WriteCoord', 'Abacus']
     --external_repr_tool 'WriteCoord'
     # Way the numerosity is presented: ['spatial', 'temporal']
-    --observation 'spatial'
+    --observation 'temporal'
     # Training starts with maximimum of max_objects presented objects
     --max_objects 1
     # If curriculum_learning==True --> max_objects will be increased until max_max_objects
@@ -17,7 +17,7 @@ args=(
     # obs_ext_shape determines the shape of the observation and the external tool
     --obs_ext_shape 10 1
     # exp_name will define the subfolder in which the results will be saved
-    --exp_name static_1
+    --exp_name temporal_1
 )
 
 python3 run_experiment.py "${args[@]}"
