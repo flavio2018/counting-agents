@@ -25,7 +25,7 @@ def main():
     parser.add_argument('--curriculum_learning', type=bool, default=True)
     parser.add_argument('--max_max_objects', type=int, default=9)
     parser.add_argument('--obs_ext_shape', nargs='+', type=int, default=(4,4))
-    parser.add_argument('--net_type', type=str, choices=['FC', 'CNN'], default=FC)
+    parser.add_argument('--net_type', type=str, choices=['FC', 'CNN'], default='FC')
     parser.add_argument('--event_distance_range', nargs='+', type=int, default=(2, 3))
 
     parser.add_argument('--debug_mode', type=bool, default=True)
