@@ -17,7 +17,7 @@ class SingleRLAgent():
         self.single_or_double = 'single'
         self.params = agent_params
         self.max_objects = n_objects if n_objects is not None else self.params['max_objects']
-        self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation'], self) if 'max_episode_length' not in self.params else self.params['max_episode_length']
+        #self.max_episode_length = calc_max_episode_length(self.max_objects, self.params['observation'], self) if 'max_episode_length' not in self.params else self.params['max_episode_length']
         #self.experiment_specific_setup = ExperimentSetup(agent_params) #AgentSetupDict[self.params['Agent_Setup']](agent_params)
         self.IsPartOfMultiAgents = True if agent_params['single_or_multi_agent'] == 'multi' else False
 
@@ -166,7 +166,7 @@ class SingleRLAgent():
 
     def reset(self, n_objects=None):
         self.n_objects = random.randint(0, self.max_objects) if(n_objects is None) else n_objects
-        self.max_episode_length = calc_max_episode_length(self, self.n_objects, self.params['observation'])
+        #self.max_episode_length = calc_max_episode_length(self, self.n_objects, self.params['observation'])
         self.IsSubmitted = False
 
         #self.experiment_specific_setup.reset(self)
@@ -256,12 +256,12 @@ class ObsExternalWorld():
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         agent.obs = np.zeros(agent.obs_shape)
         agent.default_obs = agent.obs
-        agent.event_timesteps = calc_event_timesteps(agent.n_objects, max_episode_length=agent.max_episode_length, event_distance_range=agent.params['event_distance_range'])  #
+        agent.event_timesteps = calc_event_timesteps(agent.n_objects, event_distance_range=agent.params['event_distance_range'])  #
         #if(agent.n_objects==0):
         #    agent.max_episode_length = 4
         #else:
         #    agent.max_episode_length = agent.event_timesteps[-1] + 1
-        agent.max_episode_length = calc_max_episode_length(agent, agent.n_objects, agent.params['observation'] )
+        agent.max_episode_length = calc_max_episode_length(agent, agent.n_objects, agent.params['observation'], event_distance_range=agent.params['event_distance_range'])
         agent.event_obs = np.zeros(agent.obs_shape)
         middle_x = agent.obs_shape[0] // 2
         middle_y = agent.obs_shape[1] // 2
@@ -493,7 +493,7 @@ class OtherInteractions():
             agent.IsSubmitted = True
 
 
-def calc_max_episode_length(agent, n_objects, observation):
+def calc_max_episode_length(agent, n_objects, observation, event_distance_range=None):
     if (observation == 'spatial'):
         if(agent.params['IsSubmitButton'] or agent.params['fixed_max_episode_length']>0):
             return agent.params['fixed_max_episode_length']
@@ -508,7 +508,11 @@ def calc_max_episode_length(agent, n_objects, observation):
         if (n_objects >= big_timestep_range_from_n):
             max_time_length += (n_objects - big_timestep_range_from_n + 1) * 3
         '''
-        return 3*n_objects+3
+        if(event_distance_range is not None):
+            time_per_object =  event_distance_range[1]
+        else:
+            time_per_object = 3
+        return time_per_object*n_objects+time_per_object
 
 
 def calc_event_timesteps(n_objects, max_episode_length=None, event_distance_range=None):
