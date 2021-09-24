@@ -17,7 +17,8 @@ args=(
     # obs_ext_shape determines the shape of the observation and the external tool
     --obs_ext_shape 10 1
     # exp_name will define the subfolder in which the results will be saved
-    --exp_name static_1
+    --collect_n_episodes_per_itr 64
+    --exp_name static_2
 )
 
 python3 run_experiment.py "${args[@]}"
