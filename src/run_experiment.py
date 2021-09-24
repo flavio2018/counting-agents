@@ -23,8 +23,10 @@ def main():
     # If curriculum_learning is True, max_object will increment by 1 from initial max_objects, whenever the agent reaches a mean
     # reward of 0.98. Incrementation will stop at max_max_objects.
     parser.add_argument('--curriculum_learning', type=bool, default=True)
-    parser.add_argument('--max_max_objects', type=int, default=2)
-    parser.add_argument('--obs_ext_shape', nargs='+', type=int, default=(10,1))
+    parser.add_argument('--max_max_objects', type=int, default=9)
+    parser.add_argument('--obs_ext_shape', nargs='+', type=int, default=(4,4))
+    parser.add_argument('--net_type', type=str, choices=['FC', 'CNN'], default=FC)
+    parser.add_argument('--event_distance_range', nargs='+', type=int, default=(2, 3))
 
     parser.add_argument('--debug_mode', type=bool, default=True)
     parser.add_argument('--exp_name', type=str, default='TODO')
@@ -45,45 +47,30 @@ def main():
     parser.add_argument('--IsClip', type=bool, default=True)
     parser.add_argument('--grad_clip_value', type=int, default=10)
 
+    parser.add_argument('--action_cost', type=float, default=0.0)
+    parser.add_argument('--moved_or_mod_ext', type=float, default=0.0)
+    parser.add_argument('--said_number_before_last_time_step', type=float, default=0.0)
+    parser.add_argument('--main_reward', type=float, default=1.0)
+
     args = parser.parse_args()
     params = vars(args)
 
-    # SpatialComparisonMoveAndWrite - Rewards
-    #reward_dict = {
-    #    'moved_or_mod_ext': +0.12,
-    #    'gave_answer_before_answer_time': -0.01,
-    #    'main_reward': +1.0
-    #}
-
-    # Temporal Classify Abacus - Rewards
-    #reward_dict = {
-    #    'moved_or_mod_ext': +0.2,
-    #    'said_number_before_last_time_step': -0.00,
-    #    'main_reward': +0.6
-    #}
-
     # Spatial Classify MoveAndWrite
     reward_dict = {
-        'moved_or_mod_ext': +0.0,
-        'said_number_before_last_time_step': -0.3,
-        'main_reward': +0.7
+        'action_cost': params['action_cost'], #added if action is not 'wait'
+        'moved_or_mod_ext': params['moved_or_mod_ext'],
+        'said_number_before_last_time_step': params['said_number_before_last_time_step'],
+        'main_reward': params['main_reward']
     }
 
-    # Temporal Compare Abacus
-    #reward_dict = {
-    #    'moved_or_mod_ext': +0.01,
-    #    'gave_answer_before_answer_time': -0.01,
-    #    'main_reward': +1.0
-    #}
-
-    #obs_ext_shape = (9,1)
 
     agent_params = {
         'RL_method': 'PPO',
-        'net_type': 'FC', #FC or CNN
+        'net_type': params['net_type'], #FC or CNN
         'max_objects': params['max_objects'],
         'obs_shape': tuple(params['obs_ext_shape']),
         'ext_shape': tuple(params['obs_ext_shape']),
+        'event_distance_range': tuple(params['event_distance_range']),
         'IsSubmitButton': False,
         'fixed_max_episode_length': 4, # if IsSubmitButton there will be a fixed maximum length until the agent can submit the answer. Can do before as well.
         'BATCH_SIZE': params['BATCH_SIZE'],
@@ -163,8 +150,9 @@ def plot_and_save_analysis(exp_dir, exp_name):
         ext_repr = pickle.load(f)
 
     # Plot and save token positions of external representations if task == Abacus
-    file_path = exp_dir + '/' + exp_name + '_token_positions.svg'
-    plot_and_save_token_positions_of_reprs(ext_repr, file_path=file_path)
+    if('abacus_1D' in exp_name):
+        file_path = exp_dir + '/' + exp_name + '_token_positions.svg'
+        plot_and_save_token_positions_of_reprs(ext_repr, file_path=file_path)
 
     # Plot and save correlations between the external representations
     file_path = exp_dir + '/' + exp_name + '_ext_repr_correlation.svg'

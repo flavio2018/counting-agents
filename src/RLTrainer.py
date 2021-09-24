@@ -159,7 +159,7 @@ class RL_Trainer(object):
 
             while not done:
                 t_sofar += 1
-                action = self.agent.select_action(state, train_episode, deterministic=eval)
+                action = self.agent.select_action(state, train_episode, collect=collect, deterministic=eval)
                 if (env.params['single_or_multi_agent'] == 'multi'):
                     actions_during_episode.append(action)
 

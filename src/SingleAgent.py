@@ -256,11 +256,12 @@ class ObsExternalWorld():
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         agent.obs = np.zeros(agent.obs_shape)
         agent.default_obs = agent.obs
-        agent.event_timesteps = calc_event_timesteps(agent.n_objects, max_episode_length=agent.max_episode_length)  #
-        if(agent.n_objects==0):
-            agent.max_episode_length = 4
-        else:
-            agent.max_episode_length = agent.event_timesteps[-1] + 1
+        agent.event_timesteps = calc_event_timesteps(agent.n_objects, max_episode_length=agent.max_episode_length, event_distance_range=agent.params['event_distance_range'])  #
+        #if(agent.n_objects==0):
+        #    agent.max_episode_length = 4
+        #else:
+        #    agent.max_episode_length = agent.event_timesteps[-1] + 1
+        agent.max_episode_length = calc_max_episode_length(agent, agent.n_objects, agent.params['observation'] )
         agent.event_obs = np.zeros(agent.obs_shape)
         middle_x = agent.obs_shape[0] // 2
         middle_y = agent.obs_shape[1] // 2
@@ -507,15 +508,17 @@ def calc_max_episode_length(agent, n_objects, observation):
         if (n_objects >= big_timestep_range_from_n):
             max_time_length += (n_objects - big_timestep_range_from_n + 1) * 3
         '''
-        return 3*n_objects+1
+        return 3*n_objects+3
 
 
-def calc_event_timesteps(n_objects, max_episode_length=None):
+def calc_event_timesteps(n_objects, max_episode_length=None, event_distance_range=None):
     #if(n_objects<=3):
     #    return random.sample(range(1, max_episode_length), n_objects)
     big_timestep_range_from_n = 5
-    small_timestep_range = [2, 3]
-    big_timestep_range = [2, 3]
+    if(event_distance_range is None):
+        event_distance_range = [2,3]
+    small_timestep_range = event_distance_range
+    big_timestep_range = event_distance_range
     timestep_range = small_timestep_range
     event_timesteps = []
     t_n = 0

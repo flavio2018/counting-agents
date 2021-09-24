@@ -266,7 +266,7 @@ class PPO_Agent_Single:
         print("--------------------------------------------------------------------------------------------")
 
 
-    def select_action(self, state, i_episode=0, deterministic=False):
+    def select_action(self, state, i_episode=0, collect=False, deterministic=False):
 
         if self.has_continuous_action_space:
             with torch.no_grad():
@@ -331,7 +331,7 @@ class PPO_Agent_Single:
             surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * advantages
 
             # final loss of clipped objective PPO
-            loss = -torch.min(surr1, surr2) + 0.5*self.MseLoss(state_values, rewards) - 0.01*dist_entropy
+            loss = -torch.min(surr1, surr2) + 0.5*self.MseLoss(state_values, rewards) - 0.01*dist_entropy  # original beta: 0.01
 
             # take gradient step
             self.optimizer.zero_grad()

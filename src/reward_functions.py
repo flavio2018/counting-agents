@@ -8,6 +8,8 @@ def reward_done_function_classify(reward_dict, agents):
 
     if (agents.single_or_double == 'single'):
         if (agents.timestep <= agents.max_episode_length):
+            if(not Is_agent_did_action(agents, 'wait')):
+                reward += reward_dict['action_cost']
             if (agents.params['observation'] == 'temporal'):
                 reward += reward_interaction_during_events(reward_dict, agents)
             if (agents.params['observation'] == 'spatial'):
