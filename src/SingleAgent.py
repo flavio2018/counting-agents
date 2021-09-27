@@ -251,6 +251,7 @@ class ObsExternalWorld():
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
         agent.obs = np.zeros(agent.obs_shape)
         agent.obs.ravel()[np.random.choice(agent.obs.size, agent.n_objects, replace=False)] = 1
+        agent.max_episode_length = calc_max_episode_length(agent, agent.n_objects, agent.params['observation'])
 
     def obs_reset_function_empty(self, agent):
         # Initialize observation: 1-max_objects randomly placed 1s placed on a 0-grid of shape dim x dim
@@ -495,10 +496,13 @@ class OtherInteractions():
 
 def calc_max_episode_length(agent, n_objects, observation, event_distance_range=None):
     if (observation == 'spatial'):
+        '''
         if(agent.params['IsSubmitButton'] or agent.params['fixed_max_episode_length']>0):
             return agent.params['fixed_max_episode_length']
         else:
             return (n_objects)
+        '''
+        return agent.params['fixed_max_episode_length']
     elif (observation == 'temporal'):
         '''
         if(n_objects<=3):
