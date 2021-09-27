@@ -1,4 +1,5 @@
 import os
+import random
 import time
 import sys
 from RLTrainer import RL_Trainer
@@ -111,7 +112,7 @@ def main():
     number_string = str(params['max_objects'])
     if(params['curriculum_learning']):
         number_string += '_to_' + str(params['max_max_objects'])
-    exp_name = [params['task'], params['external_repr_tool'], params['observation'], number_string, time.strftime("%d-%m-%Y_%H-%M-%S")]
+    exp_name = [params['task'], params['external_repr_tool'], params['observation'], number_string, time.strftime("%d-%m-%Y_%H-%M-%S"), str(random.randint(0, 10000))]
     separator = '_'
     print(separator.join(exp_name))
     logdir = separator.join(exp_name)
