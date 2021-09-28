@@ -14,7 +14,7 @@ def main():
 
     parser.add_argument('--single_or_multi_agent', choices=['single', 'multi'], type=str, default='single')
     parser.add_argument('--task', type=str, choices=['compare', 'classify', 'reproduce'], default='classify')
-    parser.add_argument('--external_repr_tool', type=str, choices=['MoveAndWrite', 'WriteCoord', 'Abacus', 'SpokenWords'], default='Abacus')
+    parser.add_argument('--external_repr_tool', type=str, choices=['MoveAndWrite', 'WriteCoord', 'Abacus', 'SpokenWords'], default='WriteCoord')
     parser.add_argument('--observation', type=str, choices=['spatial', 'temporal'], default='temporal')
 
 
@@ -48,7 +48,7 @@ def main():
     parser.add_argument('--IsClip', type=bool, default=True)
     parser.add_argument('--grad_clip_value', type=int, default=10)
 
-    parser.add_argument('--action_cost', type=float, default=0.0)
+    parser.add_argument('--action_cost', type=float, default=-0.00)
     parser.add_argument('--moved_or_mod_ext', type=float, default=0.0)
     parser.add_argument('--said_number_before_last_time_step', type=float, default=0.0)
     parser.add_argument('--main_reward', type=float, default=1.0)
