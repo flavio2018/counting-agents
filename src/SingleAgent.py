@@ -165,8 +165,14 @@ class SingleRLAgent():
         return total_img
 
     def reset(self, n_objects=None):
+
+        #dominant_prob = 0.3
+        #probs = [(1 - dominant_prob) / (self.max_objects) if i < self.max_objects else dominant_prob for i in range(self.max_objects + 1)]
+        #self.n_objects = np.random.choice(np.arange(0, self.max_objects + 1), p=probs)
+
         self.n_objects = random.randint(0, self.max_objects) if(n_objects is None) else n_objects
         #self.max_episode_length = calc_max_episode_length(self, self.n_objects, self.params['observation'])
+
         self.IsSubmitted = False
 
         #self.experiment_specific_setup.reset(self)

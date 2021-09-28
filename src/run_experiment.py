@@ -36,7 +36,7 @@ def main():
     parser.add_argument('--PrioratizedReplayMemory', type=bool, default=False)
     parser.add_argument('--collect_every_n_iterations', type=int, default=1)
     parser.add_argument('--eval_every_n_iterations', type=int, default=100)
-    parser.add_argument('--collect_n_episodes_per_itr', type=int, default=10)
+    parser.add_argument('--collect_n_episodes_per_itr', type=int, default=64)
     parser.add_argument('--eval_n_episodes_per_itr', type=int, default=100)
     parser.add_argument('--n_episodes_per_eval', type=int, default=10)
     parser.add_argument('--log_loss_frequ', type=int, default=100)
