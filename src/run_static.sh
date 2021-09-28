@@ -18,7 +18,8 @@ args=(
     --obs_ext_shape 10 1
     # exp_name will define the subfolder in which the results will be saved
     --collect_n_episodes_per_itr 64
-    --exp_name static_2
+    --exp_name static_3
+    --use_gpu False
 )
 
 python3 run_experiment.py "${args[@]}"

@@ -18,7 +18,8 @@ args=(
     --obs_ext_shape 4 4
     --collect_n_episodes_per_itr 64
     # exp_name will define the subfolder in which the results will be saved
-    --exp_name temporal_abacus_2D_2
+    --exp_name temporal_abacus_2D_3
+    --use_gpu False
 )
 
 python3 run_experiment.py "${args[@]}"
