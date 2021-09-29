@@ -20,7 +20,7 @@ args=(
     # exp_name will define the subfolder in which the results will be saved
     --exp_name temporal_3
     --use_gpu False
-    --action_cost -0.05
+    --action_cost -0.00
 )
 
 python3 run_experiment.py "${args[@]}"
