@@ -20,16 +20,17 @@ class FC(nn.Module):
         x = self.fc3(x)
         return x
 
+hidden_size = 64 # original 64
 
 class Actor_FC(nn.Module):
     def __init__(self, state_dim, action_dim):
         super(Actor_FC, self).__init__()
         self.fc = nn.Sequential(
-            nn.Linear(state_dim, 64),
+            nn.Linear(state_dim, hidden_size),
             nn.Tanh(),
-            nn.Linear(64, 64),
+            nn.Linear(hidden_size, hidden_size),
             nn.Tanh(),
-            nn.Linear(64, action_dim),
+            nn.Linear(hidden_size, action_dim),
             nn.Softmax(dim=-1)
         )
     def forward(self, x):
@@ -40,11 +41,11 @@ class Critic_FC(nn.Module):
     def __init__(self, state_dim):
         super(Critic_FC, self).__init__()
         self.fc = nn.Sequential(
-                nn.Linear(state_dim, 64),
+                nn.Linear(state_dim, hidden_size),
                 nn.Tanh(),
-                nn.Linear(64, 64),
+                nn.Linear(hidden_size, hidden_size),
                 nn.Tanh(),
-                nn.Linear(64, 1)
+                nn.Linear(hidden_size, 1)
             )
     def forward(self, x):
         return self.fc(x)

@@ -73,7 +73,7 @@ def main():
         'ext_shape': tuple(params['obs_ext_shape']),
         'event_distance_range': tuple(params['event_distance_range']),
         'IsSubmitButton': False,
-        'fixed_max_episode_length': 8, # if IsSubmitButton there will be a fixed maximum length until the agent can submit the answer. Can do before as well.
+        'fixed_max_episode_length': 3, # if IsSubmitButton there will be a fixed maximum length until the agent can submit the answer. Can do before as well.
         'BATCH_SIZE': params['BATCH_SIZE'],
         'LEARNING_RATE': 5e-4,
         'target_update_freq': 10,
