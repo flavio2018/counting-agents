@@ -20,7 +20,7 @@ def main():
 
     parser.add_argument('--max_objects', type=int, default=1)
     #parser.add_argument('--max_episode_length', type=int, default=5)
-    parser.add_argument('--num_iterations', type=int, default=100000)
+    parser.add_argument('--num_iterations', type=int, default=60000)
     # If curriculum_learning is True, max_object will increment by 1 from initial max_objects, whenever the agent reaches a mean
     # reward of 0.98. Incrementation will stop at max_max_objects.
     parser.add_argument('--curriculum_learning', type=bool, default=True)
