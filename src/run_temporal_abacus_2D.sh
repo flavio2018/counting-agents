@@ -8,17 +8,17 @@ args=(
     # Way the numerosity is presented: ['spatial', 'temporal']
     --observation 'temporal'
     # Training starts with maximimum of max_objects presented objects
-    --max_objects 1
+    --max_objects 9
     # If curriculum_learning==True --> max_objects will be increased until max_max_objects
     --max_max_objects 9
-    --curriculum_learning True
+    --curriculum_learning False
     # Run num_iterations, except agent masters all before
-    --num_iterations 100000
+    --num_iterations 60000
     # obs_ext_shape determines the shape of the observation and the external tool
     --obs_ext_shape 4 4
     --collect_n_episodes_per_itr 64
     # exp_name will define the subfolder in which the results will be saved
-    --exp_name temporal_abacus_2D_3
+    --exp_name temporal_abacus_2D_no_curriculum
     --use_gpu False
 )
 
