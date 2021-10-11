@@ -2,6 +2,6 @@
 
 for((c=0;c<$1;c++))
 do
-	./run_temporal_abacus.sh &
+	./run_temporal_abacus.sh
 done
 
