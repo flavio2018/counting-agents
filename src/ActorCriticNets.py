@@ -27,9 +27,9 @@ class Actor_FC(nn.Module):
         super(Actor_FC, self).__init__()
         self.fc = nn.Sequential(
             nn.Linear(state_dim, hidden_size),
-            nn.Tanh(),
+            nn.ReLU(), #nn.Tanh()
             nn.Linear(hidden_size, hidden_size),
-            nn.Tanh(),
+            nn.ReLU(),
             nn.Linear(hidden_size, action_dim),
             nn.Softmax(dim=-1)
         )
@@ -42,9 +42,9 @@ class Critic_FC(nn.Module):
         super(Critic_FC, self).__init__()
         self.fc = nn.Sequential(
                 nn.Linear(state_dim, hidden_size),
-                nn.Tanh(),
+                nn.ReLU(),
                 nn.Linear(hidden_size, hidden_size),
-                nn.Tanh(),
+                nn.ReLU(),
                 nn.Linear(hidden_size, 1)
             )
     def forward(self, x):
